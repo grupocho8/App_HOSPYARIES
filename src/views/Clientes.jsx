@@ -1,78 +1,114 @@
-import React, { useState } from "react";
-import { Container, Row, Col, Button } from "react-bootstrap";
+import React, { useState, useEffect } from "react";
+import { Container, Row, Col, Button, Spinner } from "react-bootstrap";
 import { supabase } from "../database/supabaseconfig";
+
+import TablaClientes from "../components/clientes/TablaClientes";
+import TarjetaCliente from "../components/clientes/TarjetaCliente";
 
 import ModalRegistroCliente from "../components/clientes/ModalRegistroCliente";
 import NotificacionOperacion from "../components/NotificacionOperacion";
 
 const Clientes = () => {
-  const [toast, setToast] = useState({ mostrar: false, mensaje: "", tipo: "" });
+  // ==================== ESTADOS ====================
+  const [clientes, setClientes] = useState([]);
+  const [cargando, setCargando] = useState(true);
+
+  // Estado del modal de registro (¡este era el que faltaba!)
   const [mostrarModal, setMostrarModal] = useState(false);
 
+  // Estados para modales de edición y eliminación
+  const [clienteAEditar, setClienteAEditar] = useState(null);
+  const [clienteAEliminar, setClienteAEliminar] = useState(null);
+  const [mostrarModalEdicion, setMostrarModalEdicion] = useState(false);
+  const [mostrarModalEliminacion, setMostrarModalEliminacion] = useState(false);
+
+  // Estado del formulario de nuevo cliente
   const [nuevoCliente, setNuevoCliente] = useState({
     nombre: "",
     apellido: "",
     cedula: "",
   });
 
+  const [toast, setToast] = useState({ mostrar: false, mensaje: "", tipo: "" });
+
+  // ==================== MÉTODOS DE MODALES ====================
+  const abrirModalEdicion = (cliente) => {
+    setClienteAEditar(cliente);
+    setMostrarModalEdicion(true);
+  };
+
+  const abrirModalEliminacion = (cliente) => {
+    setClienteAEliminar(cliente);
+    setMostrarModalEliminacion(true);
+  };
+
+  // ==================== CARGA DE CLIENTES ====================
+  const cargarClientes = async () => {
+    try {
+      setCargando(true);
+      const { data, error } = await supabase
+        .from("clientes")
+        .select("*")
+        .order("fecha_registro", { ascending: false });
+
+      if (error) throw error;
+
+      setClientes(data || []);
+    } catch (error) {
+      console.error("Error al cargar clientes:", error.message);
+      setToast({
+        mostrar: true,
+        mensaje: "Error al cargar la lista de clientes.",
+        tipo: "error",
+      });
+    } finally {
+      setCargando(false);
+    }
+  };
+
+  // Carga inicial
+  useEffect(() => {
+    cargarClientes();
+  }, []);
+
+  // ==================== FORMULARIO ====================
   const manejoCambioInput = (e) => {
     const { name, value } = e.target;
-    setNuevoCliente((prev) => ({
-      ...prev,
-      [name]: value,
-    }));
+    setNuevoCliente((prev) => ({ ...prev, [name]: value }));
   };
 
   const agregarCliente = async () => {
     try {
-      if (
-        !nuevoCliente.nombre.trim() ||
-        !nuevoCliente.apellido.trim() ||
-        !nuevoCliente.cedula.trim()
-      ) {
-        setToast({
-          mostrar: true,
-          mensaje: "Debe llenar todos los campos.",
-          tipo: "advertencia",
-        });
+      if (!nuevoCliente.nombre.trim() || !nuevoCliente.apellido.trim() || !nuevoCliente.cedula.trim()) {
+        setToast({ mostrar: true, mensaje: "Debe llenar todos los campos.", tipo: "advertencia" });
         return;
       }
 
       const { error } = await supabase.from("clientes").insert([
         {
-          id_cliente: crypto.randomUUID(), // Para cumplir con el CHAR(36) de tu tabla
+          id_cliente: crypto.randomUUID(),
           nombre: nuevoCliente.nombre,
           apellido: nuevoCliente.apellido,
           cedula: nuevoCliente.cedula,
-          fecha_registro: new Date(),
+          fecha_registro: new Date().toISOString(),
         },
       ]);
 
-      if (error) {
-        console.error("Error al agregar cliente:", error.message);
-        setToast({
-          mostrar: true,
-          mensaje: "Error al registrar cliente.",
-          tipo: "error",
-        });
-        return;
-      }
+      if (error) throw error;
 
       setToast({
         mostrar: true,
-        mensaje: `Cliente "${nuevoCliente.nombre}" registrado exitosamente.`,
+        mensaje: `Cliente "${nuevoCliente.nombre} ${nuevoCliente.apellido}" registrado exitosamente.`,
         tipo: "exito",
       });
 
+      // Limpiar y recargar (exactamente como pide la guía)
       setNuevoCliente({ nombre: "", apellido: "", cedula: "" });
       setMostrarModal(false);
+      await cargarClientes();
     } catch (err) {
-      console.error("Excepción al agregar cliente:", err.message);
-      setToast({
-        mostrar: true,
-        mensaje: "Error inesperado al registrar cliente.",
-        tipo: "error",
-      });
+      console.error(err);
+      setToast({ mostrar: true, mensaje: "Error al registrar cliente.", tipo: "error" });
     }
   };
 
@@ -89,7 +125,7 @@ const Clientes = () => {
           <Button
             onClick={() => setMostrarModal(true)}
             size="md"
-            className="color-navbar border-0" 
+            className="color-navbar border-0"
           >
             <i className="bi-plus-lg"></i>
             <span className="d-none d-sm-inline ms-2">Nuevo Cliente</span>
@@ -98,6 +134,34 @@ const Clientes = () => {
       </Row>
 
       <hr />
+
+      {/* Spinner o contenido (tarjetas + tabla) */}
+      {cargando ? (
+        <div className="text-center py-5">
+          <Spinner animation="border" variant="success" size="lg" />
+          <p className="mt-3">Cargando clientes...</p>
+        </div>
+      ) : (
+        <>
+          {/* Tarjetas - Solo en móviles (guía E10) */}
+          <Row className="d-lg-none">
+            <TarjetaCliente
+              clientes={clientes}
+              abrirModalEdicion={abrirModalEdicion}
+              abrirModalEliminacion={abrirModalEliminacion}
+            />
+          </Row>
+
+          {/* Tabla - Solo en pantallas grandes (guía E9) */}
+          <Row className="d-none d-lg-block">
+            <TablaClientes
+              clientes={clientes}
+              abrirModalEdicion={abrirModalEdicion}
+              abrirModalEliminacion={abrirModalEliminacion}
+            />
+          </Row>
+        </>
+      )}
 
       {/* Modal de Registro */}
       <ModalRegistroCliente
