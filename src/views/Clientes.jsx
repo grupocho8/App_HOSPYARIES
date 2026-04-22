@@ -7,6 +7,8 @@ import TarjetaCliente from "../components/clientes/TarjetaCliente";
 
 import ModalRegistroCliente from "../components/clientes/ModalRegistroCliente";
 import NotificacionOperacion from "../components/NotificacionOperacion";
+import ModalEdicionCliente from "../components/clientes/ModalEdicionCliente";
+import ModalEliminacionCliente from "../components/clientes/ModalEliminarCliente";
 
 const Clientes = () => {
   // ==================== ESTADOS ====================
@@ -170,6 +172,24 @@ const Clientes = () => {
         nuevoCliente={nuevoCliente}
         manejoCambioInput={manejoCambioInput}
         agregarCliente={agregarCliente}
+      />
+      {/* Modal de Edición (Agregado) */}
+      <ModalEdicionCliente
+        mostrarModalEdicion={mostrarModalEdicion}
+        setMostrarModalEdicion={setMostrarModalEdicion}
+        clienteAEditar={clienteAEditar}
+        setClienteAEditar={setClienteAEditar}
+        supabase={supabase}
+        cargarClientes={cargarClientes}
+        setToast={setToast}
+      />
+      <ModalEliminacionCliente
+        mostrarModalEliminacion={mostrarModalEliminacion}
+        setMostrarModalEliminacion={setMostrarModalEliminacion}
+        cliente={clienteAEliminar}
+        supabase={supabase}
+        setToast={setToast}
+        cargarClientes={cargarClientes}
       />
 
       {/* Notificación */}
