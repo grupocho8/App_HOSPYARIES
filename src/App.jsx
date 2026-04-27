@@ -15,7 +15,7 @@ import Ventas from "./views/Ventas";
 import Catalogo from "./views/Catalogo";
 import Login from "./views/Login";
 import Pagina404 from "./views/Pagina404";
-import Empleados from "./views/Empleados"; // Aparece en tu captura de pantalla
+import Empleados from "./views/Empleados";
 
 const App = () => {
   return (
@@ -37,6 +37,7 @@ const App = () => {
           <Route path='/reservaciones' element={<RutaProtegida><Reservaciones /></RutaProtegida>} />
           
           <Route path='/empleados' element={<RutaProtegida><Empleados /></RutaProtegida>} />
+          
           <Route path='/turnos' element={<RutaProtegida><Turnos /></RutaProtegida>} />
           
           <Route path='/ventas' element={<RutaProtegida><Ventas /></RutaProtegida>} />

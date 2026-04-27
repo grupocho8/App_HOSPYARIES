@@ -1,14 +1,207 @@
-//import React, { useEffect, useState } from "react";
-import { Container, Row, Col, Button } from "react-bootstrap";
+import React, { useState, useEffect } from "react";
+import { Container, Row, Col, Button, Spinner } from "react-bootstrap";
+import { supabase } from "../database/supabaseconfig";
+
+import TablaEmpleados from "../components/empleados/TablaEmpleados";
+import TarjetaEmpleados from "../components/empleados/TarjetaEmpleados";
+
+import ModalRegistroEmpleados from "../components/empleados/ModalRegistroEmpleados";
+import NotificacionOperacion from "../components/NotificacionOperacion";
+import ModalEdicionEmpleados from "../components/empleados/ModalEdicionEmpleados";
+import ModalEliminarEmpleados from "../components/empleados/ModalEliminarEmpleados";
 
 const Empleados = () => {
+  // ==================== ESTADOS ====================
+  const [empleados, setEmpleados] = useState([]);
+  const [cargando, setCargando] = useState(true);
+
+  const [mostrarModal, setMostrarModal] = useState(false);
+
+  const [empleadoAEditar, setEmpleadoAEditar] = useState(null);
+  const [empleadoAEliminar, setEmpleadoAEliminar] = useState(null);
+  const [mostrarModalEdicion, setMostrarModalEdicion] = useState(false);
+  const [mostrarModalEliminacion, setMostrarModalEliminacion] = useState(false);
+
+  const [nuevoEmpleado, setNuevoEmpleado] = useState({
+    nombre: "",
+    rol: "",
+    usuario: "",
+    password: "",
+  });
+
+  const [toast, setToast] = useState({ mostrar: false, mensaje: "", tipo: "" });
+
+  // ==================== MÉTODOS DE MODALES ====================
+  const abrirModalEdicion = (empleado) => {
+    setEmpleadoAEditar(empleado);
+    setMostrarModalEdicion(true);
+  };
+
+  const abrirModalEliminacion = (empleado) => {
+    setEmpleadoAEliminar(empleado);
+    setMostrarModalEliminacion(true);
+  };
+
+  // ==================== CARGA DE EMPLEADOS ====================
+  const cargarEmpleados = async () => {
+    try {
+      setCargando(true);
+      const { data, error } = await supabase
+        .from("empleados")
+        .select("*");
+
+      if (error) throw error;
+
+      setEmpleados(data || []);
+    } catch (error) {
+      console.error("Error al cargar empleados:", error.message);
+      setToast({
+        mostrar: true,
+        mensaje: "Error al cargar la lista de empleados.",
+        tipo: "error",
+      });
+    } finally {
+      setCargando(false);
+    }
+  };
+
+  useEffect(() => {
+    cargarEmpleados();
+  }, []);
+
+  // ==================== FORMULARIO ====================
+  const manejoCambioInput = (e) => {
+    const { name, value } = e.target;
+    setNuevoEmpleado((prev) => ({ ...prev, [name]: value }));
+  };
+
+const agregarEmpleado = async () => {
+    try {
+      // 1. Validaciones (Todos son NON-NULLABLE en tu imagen)
+      if (
+        !nuevoEmpleado.nombre.trim() || 
+        !nuevoEmpleado.rol.trim() || 
+        !nuevoEmpleado.usuario.trim() ||
+        !nuevoEmpleado.password.trim()
+      ) {
+        setToast({ mostrar: true, mensaje: "Todos los campos son obligatorios.", tipo: "advertencia" });
+        return;
+      }
+
+      // 2. Inserción con id_empleado como UUID (Igual que en Clientes)
+      const { error } = await supabase.from("empleados").insert([
+        {
+          id_empleado: crypto.randomUUID(), // CRÍTICO: Tu tabla espera un uuid
+          nombre: nuevoEmpleado.nombre,
+          rol: nuevoEmpleado.rol,
+          usuario: nuevoEmpleado.usuario,
+          password: nuevoEmpleado.password,
+        },
+      ]);
+
+      if (error) throw error;
+
+      setToast({
+        mostrar: true,
+        mensaje: `Empleado "${nuevoEmpleado.nombre}" registrado exitosamente.`,
+        tipo: "exito",
+      });
+
+      // Limpiar campos y cerrar modal
+      setNuevoEmpleado({ nombre: "", rol: "", usuario: "", password: "" });
+      setMostrarModal(false);
+      await cargarEmpleados();
+
+    } catch (err) {
+      console.error("Error al insertar:", err);
+      setToast({ 
+        mostrar: true, 
+        mensaje: "Error de servidor al registrar empleado.", 
+        tipo: "error" 
+      });
+    }
+  };
+
   return (
     <Container className="mt-3">
-      <Row className="aling-items-center">
-        <Col>
-          <h2><i className="bi-house-fill me-2"></i> Empleados</h2>
+      <Row className="align-items-center mb-3">
+        <Col xs={9} sm={7} md={7} lg={7} className="d-flex align-items-center">
+          <h3 className="mb-0">
+            <i className="bi-person-badge-fill me-2"></i> Empleados
+          </h3>
+        </Col>
+        <Col xs={3} sm={5} md={5} lg={5} className="text-end">
+          <Button
+            onClick={() => setMostrarModal(true)}
+            size="md"
+            className="color-navbar border-0"
+          >
+            <i className="bi-plus-lg"></i>
+            <span className="d-none d-sm-inline ms-2">Nuevo Empleado</span>
+          </Button>
         </Col>
       </Row>
+
+      <hr />
+
+      {cargando ? (
+        <div className="text-center py-5">
+          <Spinner animation="border" variant="success" size="lg" />
+          <p className="mt-3">Cargando empleados...</p>
+        </div>
+      ) : (
+        <>
+          <Row className="d-lg-none">
+            <TarjetaEmpleados
+              empleados={empleados}
+              abrirModalEdicion={abrirModalEdicion}
+              abrirModalEliminacion={abrirModalEliminacion}
+            />
+          </Row>
+
+          <Row className="d-none d-lg-block">
+            <TablaEmpleados
+              empleados={empleados}
+              abrirModalEdicion={abrirModalEdicion}
+              abrirModalEliminacion={abrirModalEliminacion}
+            />
+          </Row>
+        </>
+      )}
+
+      <ModalRegistroEmpleados
+        mostrarModal={mostrarModal}
+        setMostrarModal={setMostrarModal}
+        nuevoEmpleado={nuevoEmpleado}
+        manejoCambioInput={manejoCambioInput}
+        agregarEmpleado={agregarEmpleado}
+      />
+      
+      <ModalEdicionEmpleados
+        mostrarModalEdicion={mostrarModalEdicion}
+        setMostrarModalEdicion={setMostrarModalEdicion}
+        empleadoAEditar={empleadoAEditar}
+        setEmpleadoAEditar={setEmpleadoAEditar}
+        supabase={supabase}
+        cargarEmpleados={cargarEmpleados}
+        setToast={setToast}
+      />
+
+      <ModalEliminarEmpleados
+        mostrarModalEliminacion={mostrarModalEliminacion}
+        setMostrarModalEliminacion={setMostrarModalEliminacion}
+        empleado={empleadoAEliminar}
+        supabase={supabase}
+        setToast={setToast}
+        cargarEmpleados={cargarEmpleados}
+      />
+
+      <NotificacionOperacion
+        mostrar={toast.mostrar}
+        mensaje={toast.mensaje}
+        tipo={toast.tipo}
+        onCerrar={() => setToast({ ...toast, mostrar: false })}
+      />
     </Container>
   );
 };
