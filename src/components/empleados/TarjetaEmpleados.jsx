@@ -15,7 +15,6 @@ const TarjetaEmpleados = ({
     setCargando(!(empleados && empleados.length > 0));
   }, [empleados]);
 
-  // Cerrar tarjeta activa con tecla Escape
   const manejarTeclaEscape = useCallback((evento) => {
     if (evento.key === "Escape") setIdTarjetaActiva(null);
   }, []);
@@ -25,7 +24,6 @@ const TarjetaEmpleados = ({
     return () => window.removeEventListener("keydown", manejarTeclaEscape);
   }, [manejarTeclaEscape]);
 
-  // Alternar tarjeta activa al hacer clic
   const alternarTarjetaActiva = (id) => {
     setIdTarjetaActiva((anterior) => (anterior === id ? null : id));
   };
@@ -80,7 +78,6 @@ const TarjetaEmpleados = ({
                     </Card.Text>
                   </Card.Body>
 
-                  {/* Capa con botones que aparece al activar la tarjeta */}
                   {tarjetaActiva && (
                     <div
                       className="tarjeta-cliente-capa"

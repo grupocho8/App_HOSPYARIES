@@ -13,13 +13,11 @@ const ModalEdicionEmpleados = ({
   const [deshabilitado, setDeshabilitado] = useState(false);
   const [mostrarPassword, setMostrarPassword] = useState(false);
 
-  // ❌ No permitir números en nombre
   const regexNombre = /^[A-Za-zÁÉÍÓÚáéíóúñÑ\s]+$/;
   const nombreValido =
     empleadoAEditar?.nombre === "" ||
     regexNombre.test(empleadoAEditar?.nombre);
 
-  // 🔒 Validar password
   const passwordValido =
     empleadoAEditar?.password?.length >= 4 &&
     empleadoAEditar?.password?.length <= 8;
@@ -142,8 +140,8 @@ const ModalEdicionEmpleados = ({
               value={empleadoAEditar.rol}
               onChange={manejoCambioInputEdicion}
             >
-              <option value="administrador">administrador</option>
-              <option value="recepcionista">recepcionista</option>
+              <option value="administrador">Administrador</option>
+              <option value="recepcionista">Recepcionista</option>
             </Form.Select>
           </Form.Group>
 

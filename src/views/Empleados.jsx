@@ -11,7 +11,6 @@ import ModalEdicionEmpleados from "../components/empleados/ModalEdicionEmpleados
 import ModalEliminarEmpleados from "../components/empleados/ModalEliminarEmpleados";
 
 const Empleados = () => {
-  // ==================== ESTADOS ====================
   const [empleados, setEmpleados] = useState([]);
   const [cargando, setCargando] = useState(true);
 
@@ -31,7 +30,6 @@ const Empleados = () => {
 
   const [toast, setToast] = useState({ mostrar: false, mensaje: "", tipo: "" });
 
-  // ==================== MÉTODOS DE MODALES ====================
   const abrirModalEdicion = (empleado) => {
     setEmpleadoAEditar(empleado);
     setMostrarModalEdicion(true);
@@ -42,7 +40,6 @@ const Empleados = () => {
     setMostrarModalEliminacion(true);
   };
 
-  // ==================== CARGA DE EMPLEADOS ====================
   const cargarEmpleados = async () => {
     try {
       setCargando(true);
@@ -69,7 +66,6 @@ const Empleados = () => {
     cargarEmpleados();
   }, []);
 
-  // ==================== FORMULARIO ====================
   const manejoCambioInput = (e) => {
     const { name, value } = e.target;
     setNuevoEmpleado((prev) => ({ ...prev, [name]: value }));
@@ -77,7 +73,6 @@ const Empleados = () => {
 
 const agregarEmpleado = async () => {
     try {
-      // 1. Validaciones (Todos son NON-NULLABLE en tu imagen)
       if (
         !nuevoEmpleado.nombre.trim() || 
         !nuevoEmpleado.rol.trim() || 
@@ -88,10 +83,9 @@ const agregarEmpleado = async () => {
         return;
       }
 
-      // 2. Inserción con id_empleado como UUID (Igual que en Clientes)
       const { error } = await supabase.from("empleados").insert([
         {
-          id_empleado: crypto.randomUUID(), // CRÍTICO: Tu tabla espera un uuid
+          id_empleado: crypto.randomUUID(),
           nombre: nuevoEmpleado.nombre,
           rol: nuevoEmpleado.rol,
           usuario: nuevoEmpleado.usuario,
@@ -107,7 +101,6 @@ const agregarEmpleado = async () => {
         tipo: "exito",
       });
 
-      // Limpiar campos y cerrar modal
       setNuevoEmpleado({ nombre: "", rol: "", usuario: "", password: "" });
       setMostrarModal(false);
       await cargarEmpleados();
