@@ -12,9 +12,9 @@ const ModalEdicionCliente = ({
 }) => {
   const [deshabilitado, setDeshabilitado] = useState(false);
 
-  // Expresión regular para cédula nicaragüense
+  // ✅ MISMA VALIDACIÓN DE CÉDULA
   const regexCedula = /^\d{3}-\d{6}-\d{4}[A-Z]$/;
-  const esCedulaValida = clienteAEditar ? regexCedula.test(clienteAEditar.cedula) : false;
+  const esCedulaValida = regexCedula.test(clienteAEditar?.cedula || "");
 
   const manejoCambioInputEdicion = (e) => {
     const { name, value } = e.target;
@@ -26,69 +26,55 @@ const ModalEdicionCliente = ({
 
   const handleActualizar = async () => {
     if (deshabilitado) return;
-    setDeshabilitado(true);
-    await actualizarClienteLocal();
-    setDeshabilitado(false);
-  };
 
-  const actualizarClienteLocal = async () => {
+    setDeshabilitado(true);
+
     try {
+      // ✅ VALIDACIÓN COMPLETA (igual que registro)
       if (
         !clienteAEditar.nombre.trim() ||
         !clienteAEditar.apellido.trim() ||
-        !clienteAEditar.cedula.trim()
+        !esCedulaValida
       ) {
         setToast({
           mostrar: true,
-          mensaje: "Debe llenar todos los campos.",
+          mensaje: "Debe completar todos los campos correctamente.",
           tipo: "advertencia",
         });
-        return;
-      }
-
-      if (!esCedulaValida) {
-        setToast({
-          mostrar: true,
-          mensaje: "El formato de la cédula no es válido.",
-          tipo: "advertencia",
-        });
+        setDeshabilitado(false);
         return;
       }
 
       const { error } = await supabase
         .from("clientes")
         .update({
-          nombre: clienteAEditar.nombre,
-          apellido: clienteAEditar.apellido,
-          cedula: clienteAEditar.cedula,
+          nombre: clienteAEditar.nombre.trim(),
+          apellido: clienteAEditar.apellido.trim(),
+          cedula: clienteAEditar.cedula.trim(),
         })
         .eq("id_cliente", clienteAEditar.id_cliente);
 
-      if (error) {
-        console.error("Error al actualizar cliente:", error.message);
-        setToast({
-          mostrar: true,
-          mensaje: `Error al actualizar el cliente ${clienteAEditar.nombre}.`,
-          tipo: "error",
-        });
-        return;
-      }
+      if (error) throw error;
 
       setMostrarModalEdicion(false);
       await cargarClientes();
+
       setToast({
         mostrar: true,
-        mensaje: `Cliente ${clienteAEditar.nombre} actualizado exitosamente.`,
+        mensaje: `Cliente ${clienteAEditar.nombre} actualizado.`,
         tipo: "exito",
       });
+
     } catch (err) {
+      console.error(err.message);
       setToast({
         mostrar: true,
-        mensaje: "Error inesperado al actualizar cliente.",
+        mensaje: err.message || "Error al actualizar cliente",
         tipo: "error",
       });
-      console.error("Excepción al actualizar cliente:", err.message);
     }
+
+    setDeshabilitado(false);
   };
 
   if (!clienteAEditar) return null;
@@ -97,13 +83,13 @@ const ModalEdicionCliente = ({
     <Modal
       show={mostrarModalEdicion}
       onHide={() => setMostrarModalEdicion(false)}
-      backdrop="static"
-      keyboard={false}
       centered
+      backdrop="static"
     >
       <Modal.Header closeButton>
         <Modal.Title>Editar Cliente</Modal.Title>
       </Modal.Header>
+
       <Modal.Body>
         <Form>
           <Form.Group className="mb-3">
@@ -113,7 +99,6 @@ const ModalEdicionCliente = ({
               name="nombre"
               value={clienteAEditar.nombre}
               onChange={manejoCambioInputEdicion}
-              placeholder="Ingresa el nombre"
             />
           </Form.Group>
 
@@ -124,7 +109,6 @@ const ModalEdicionCliente = ({
               name="apellido"
               value={clienteAEditar.apellido}
               onChange={manejoCambioInputEdicion}
-              placeholder="Ingresa el apellido"
             />
           </Form.Group>
 
@@ -136,7 +120,9 @@ const ModalEdicionCliente = ({
               value={clienteAEditar.cedula}
               onChange={manejoCambioInputEdicion}
               placeholder="001-000000-0000A"
-              isInvalid={clienteAEditar.cedula !== "" && !esCedulaValida}
+              isInvalid={
+                clienteAEditar.cedula !== "" && !esCedulaValida
+              }
             />
             <Form.Control.Feedback type="invalid">
               Formato de cédula incorrecto (000-000000-0000A).
@@ -144,22 +130,28 @@ const ModalEdicionCliente = ({
           </Form.Group>
         </Form>
       </Modal.Body>
+
       <Modal.Footer>
-        <Button variant="secondary" onClick={() => setMostrarModalEdicion(false)}>
+        <Button
+          variant="secondary"
+          onClick={() => setMostrarModalEdicion(false)}
+        >
           Cancelar
         </Button>
+
         <Button
           variant="primary"
           onClick={handleActualizar}
           disabled={
-            clienteAEditar.nombre.trim() === "" || 
-            !esCedulaValida || 
+            clienteAEditar.nombre.trim() === "" ||
+            clienteAEditar.apellido.trim() === "" ||
+            !esCedulaValida ||
             deshabilitado
           }
           className="color-navbar border-0"
           style={{ backgroundColor: "#0F5C4F" }}
         >
-          Actualizar
+          {deshabilitado ? "Actualizando..." : "Actualizar"}
         </Button>
       </Modal.Footer>
     </Modal>

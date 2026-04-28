@@ -27,6 +27,7 @@ const TarjetaHabitaciones = ({
     setIdTarjetaActiva((anterior) => (anterior === id ? null : id));
   };
 
+  // Solo los estados que pediste
   const getEstadoBadgeClass = (estado) => {
     switch (estado) {
       case "disponible":

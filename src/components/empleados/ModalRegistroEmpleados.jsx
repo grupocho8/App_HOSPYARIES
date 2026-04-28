@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Modal, Form, Button } from "react-bootstrap";
+import { Modal, Form, Button, InputGroup } from "react-bootstrap";
 
 const ModalRegistroEmpleados = ({
     mostrarModal,
@@ -9,6 +9,17 @@ const ModalRegistroEmpleados = ({
     agregarEmpleado,
 }) => {
     const [deshabilitado, setDeshabilitado] = useState(false);
+    const [mostrarPassword, setMostrarPassword] = useState(false);
+
+    // ❌ No permitir números en nombre
+    const regexNombre = /^[A-Za-zÁÉÍÓÚáéíóúñÑ\s]+$/;
+    const nombreValido =
+        nuevoEmpleado.nombre === "" || regexNombre.test(nuevoEmpleado.nombre);
+
+    // 🔒 Validar password (mínimo 4, máximo 8)
+    const passwordValido =
+        nuevoEmpleado.password.length >= 4 &&
+        nuevoEmpleado.password.length <= 8;
 
     const handleRegistrar = async () => {
         if (deshabilitado) return;
@@ -28,8 +39,10 @@ const ModalRegistroEmpleados = ({
             <Modal.Header closeButton>
                 <Modal.Title>Agregar Empleado</Modal.Title>
             </Modal.Header>
+
             <Modal.Body>
                 <Form>
+                    {/* NOMBRE */}
                     <Form.Group className="mb-3">
                         <Form.Label>Nombre</Form.Label>
                         <Form.Control
@@ -38,10 +51,14 @@ const ModalRegistroEmpleados = ({
                             value={nuevoEmpleado.nombre}
                             onChange={manejoCambioInput}
                             placeholder="Ingresa el nombre"
+                            isInvalid={!nombreValido}
                         />
+                        <Form.Control.Feedback type="invalid">
+                            El nombre no debe contener números.
+                        </Form.Control.Feedback>
                     </Form.Group>
 
-                    {/* Dentro de ModalRegistroEmpleados.jsx */}
+                    {/* ROL */}
                     <Form.Group className="mb-3">
                         <Form.Label>Rol</Form.Label>
                         <Form.Select
@@ -50,12 +67,12 @@ const ModalRegistroEmpleados = ({
                             onChange={manejoCambioInput}
                         >
                             <option value="">Selecciona un rol</option>
-                            {/* Asegúrate de que estas strings sean EXACTAMENTE igual a tu ENUM de SQL */}
                             <option value="administrador">administrador</option>
                             <option value="recepcionista">recepcionista</option>
                         </Form.Select>
                     </Form.Group>
 
+                    {/* USUARIO */}
                     <Form.Group className="mb-3">
                         <Form.Label>Usuario</Form.Label>
                         <Form.Control
@@ -68,29 +85,50 @@ const ModalRegistroEmpleados = ({
                         />
                     </Form.Group>
 
+                    {/* PASSWORD CON OJO 👁️ */}
                     <Form.Group className="mb-3">
                         <Form.Label>Password</Form.Label>
-                        <Form.Control
-                            type="password"
-                            name="password"
-                            value={nuevoEmpleado.password}
-                            onChange={manejoCambioInput}
-                            placeholder="Máximo 8 caracteres"
-                            maxLength={8}
-                        />
+                        <InputGroup>
+                            <Form.Control
+                                type={mostrarPassword ? "text" : "password"}
+                                name="password"
+                                value={nuevoEmpleado.password}
+                                onChange={manejoCambioInput}
+                                placeholder="4 a 8 caracteres"
+                                maxLength={8}
+                                isInvalid={
+                                    nuevoEmpleado.password !== "" && !passwordValido
+                                }
+                            />
+
+                            <Button
+                                variant="outline-secondary"
+                                onClick={() => setMostrarPassword(!mostrarPassword)}
+                            >
+                                <i className={`bi ${mostrarPassword ? "bi-eye-slash" : "bi-eye"}`}></i>
+                            </Button>
+
+                            <Form.Control.Feedback type="invalid">
+                                La contraseña debe tener entre 4 y 8 caracteres.
+                            </Form.Control.Feedback>
+                        </InputGroup>
                     </Form.Group>
                 </Form>
             </Modal.Body>
+
             <Modal.Footer>
                 <Button variant="secondary" onClick={() => setMostrarModal(false)}>
                     Cancelar
                 </Button>
+
                 <Button
                     variant="primary"
                     onClick={handleRegistrar}
                     disabled={
                         nuevoEmpleado.nombre.trim() === "" ||
+                        !nombreValido ||
                         nuevoEmpleado.rol === "" ||
+                        !passwordValido ||
                         deshabilitado
                     }
                     className="color-navbar border-0"
