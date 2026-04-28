@@ -12,7 +12,6 @@ import ModalEliminacionHabitacion from "../components/habitaciones/ModalEliminac
 import NotificacionOperacion from "../components/NotificacionOperacion";
 
 const Habitaciones = () => {
-
   const [habitaciones, setHabitaciones] = useState([]);
   const [cargando, setCargando] = useState(true);
 
@@ -25,13 +24,12 @@ const Habitaciones = () => {
 
   const [nuevaHabitacion, setNuevaHabitacion] = useState({
     numero: "",
-    tipo: "individual",
+    tipo: "unipersonal",
     precio: "",
   });
 
   const [toast, setToast] = useState({ mostrar: false, mensaje: "", tipo: "" });
 
-  // ==================== MODALES ====================
   const abrirModalEdicion = (habitacion) => {
     setHabitacionAEditar(habitacion);
     setMostrarModalEdicion(true);
@@ -42,7 +40,6 @@ const Habitaciones = () => {
     setMostrarModalEliminacion(true);
   };
 
-  // ==================== CARGAR ====================
   const cargarHabitaciones = async () => {
     try {
       setCargando(true);
@@ -55,7 +52,6 @@ const Habitaciones = () => {
       if (error) throw error;
 
       setHabitaciones(data || []);
-
     } catch (error) {
       console.error(error.message);
       setToast({
@@ -72,7 +68,6 @@ const Habitaciones = () => {
     cargarHabitaciones();
   }, []);
 
-  // ==================== INPUT ====================
   const manejoCambioInput = (e) => {
     const { name, value } = e.target;
     setNuevaHabitacion((prev) => ({
@@ -81,7 +76,6 @@ const Habitaciones = () => {
     }));
   };
 
-  // ==================== INSERT ====================
   const agregarHabitacion = async () => {
     try {
       if (!nuevaHabitacion.numero.trim() || !nuevaHabitacion.precio) {
@@ -112,17 +106,14 @@ const Habitaciones = () => {
 
       setNuevaHabitacion({
         numero: "",
-        tipo: "individual",
+        tipo: "unipersonal",
         precio: "",
       });
 
       setMostrarModal(false);
       await cargarHabitaciones();
-
     } catch (err) {
       console.error(err.message);
-      console.error(err.details);
-
       setToast({
         mostrar: true,
         mensaje: err.message || "Error al registrar",
@@ -133,8 +124,6 @@ const Habitaciones = () => {
 
   return (
     <Container className="mt-3">
-
-      {/* HEADER */}
       <Row className="align-items-center mb-3">
         <Col xs={9}>
           <h3>
@@ -143,15 +132,20 @@ const Habitaciones = () => {
         </Col>
 
         <Col xs={3} className="text-end">
-          <Button onClick={() => setMostrarModal(true)}>
-            + Nueva
+          <Button
+            onClick={() => setMostrarModal(true)}
+            size="md"
+            className="color-navbar border-0"
+            style={{ backgroundColor: "#0F5C4F" }}
+          >
+            <i className="bi-plus-lg"></i>
+            <span className="d-none d-sm-inline ms-2">Nueva Habitación</span>
           </Button>
         </Col>
       </Row>
 
       <hr />
 
-      {/* CONTENIDO */}
       {cargando ? (
         <div className="text-center py-5">
           <Spinner animation="border" />
@@ -177,7 +171,6 @@ const Habitaciones = () => {
         </>
       )}
 
-      {/* MODAL REGISTRO */}
       <ModalRegistroHabitacion
         mostrarModal={mostrarModal}
         setMostrarModal={setMostrarModal}
@@ -186,7 +179,6 @@ const Habitaciones = () => {
         agregarHabitacion={agregarHabitacion}
       />
 
-      {/* MODAL EDICION */}
       <ModalEdicionHabitacion
         mostrarModalEdicion={mostrarModalEdicion}
         setMostrarModalEdicion={setMostrarModalEdicion}
@@ -197,7 +189,6 @@ const Habitaciones = () => {
         setToast={setToast}
       />
 
-      {/* MODAL ELIMINAR */}
       <ModalEliminacionHabitacion
         mostrarModalEliminacion={mostrarModalEliminacion}
         setMostrarModalEliminacion={setMostrarModalEliminacion}
@@ -207,14 +198,12 @@ const Habitaciones = () => {
         cargarHabitaciones={cargarHabitaciones}
       />
 
-      {/* TOAST */}
       <NotificacionOperacion
         mostrar={toast.mostrar}
         mensaje={toast.mensaje}
         tipo={toast.tipo}
         onCerrar={() => setToast({ ...toast, mostrar: false })}
       />
-
     </Container>
   );
 };

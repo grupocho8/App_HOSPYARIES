@@ -39,7 +39,7 @@ const TablaHabitaciones = ({
                 </td>
 
                 <td>
-                  <span className="badge bg-primary">
+                  <span className="badge bg-secondary text-capitalize">
                     {habitacion.tipo}
                   </span>
                 </td>
@@ -52,11 +52,10 @@ const TablaHabitaciones = ({
 
                 <td>
                   <span 
-                    className={`badge ${
+                    className={`badge text-capitalize ${
                       habitacion.estado === 'disponible' ? 'bg-success' :
                       habitacion.estado === 'ocupada' ? 'bg-danger' :
-                      habitacion.estado === 'reservada' ? 'bg-warning' :
-                      habitacion.estado === 'mantenimiento' ? 'bg-info' :
+                      habitacion.estado === 'reservada' ? 'bg-warning text-dark' :
                       'bg-secondary'
                     }`}
                   >

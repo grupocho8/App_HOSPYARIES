@@ -35,8 +35,6 @@ const TarjetaHabitaciones = ({
         return "bg-danger";
       case "reservada":
         return "bg-warning text-dark";
-      case "mantenimiento":
-        return "bg-info";
       default:
         return "bg-secondary";
     }
@@ -69,12 +67,12 @@ const TarjetaHabitaciones = ({
                   }`}
                   onClick={() => alternarTarjetaActiva(habitacion.id_habitacion)}
                 >
-                  {/* ICONO */}
+                  {/* ICONO - Ajustado a tus tipos */}
                   <div className="text-center mt-3">
                     <i 
                       className={`bi fs-1 ${
-                        habitacion.tipo === "suite" || habitacion.tipo === "deluxe"
-                          ? "bi-building"
+                        habitacion.tipo === "triple" || habitacion.tipo === "matrimonial"
+                          ? "bi-door-closed-fill"
                           : "bi-door-open"
                       }`}
                     ></i>
@@ -85,7 +83,7 @@ const TarjetaHabitaciones = ({
                       Habitación {habitacion.numero}
                     </Card.Title>
 
-                    <Card.Text className="text-muted small">
+                    <Card.Text className="text-muted small text-capitalize">
                       <strong>Tipo:</strong> {habitacion.tipo}
                     </Card.Text>
 
@@ -96,7 +94,7 @@ const TarjetaHabitaciones = ({
                         })}
                       </span>
 
-                      <span className={`badge ${getEstadoBadgeClass(habitacion.estado)}`}>
+                      <span className={`badge text-capitalize ${getEstadoBadgeClass(habitacion.estado)}`}>
                         {habitacion.estado}
                       </span>
                     </div>

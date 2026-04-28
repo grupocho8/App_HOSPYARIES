@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Modal, Form, Button } from "react-bootstrap";
+import { Modal, Form, Button, Alert } from "react-bootstrap";
 
 const ModalRegistroHabitacion = ({
   mostrarModal,
@@ -11,12 +11,10 @@ const ModalRegistroHabitacion = ({
   const [deshabilitado, setDeshabilitado] = useState(false);
 
   const tiposHabitacion = [
-    "individual",
-    "doble",
-    "matrimonial",
-    "suite",
-    "familiar",
-    "deluxe",
+    { label: "Unipersonal", value: "unipersonal" },
+    { label: "Matrimonial", value: "matrimonial" },
+    { label: "Doble", value: "doble" },
+    { label: "Triple", value: "triple" },
   ];
 
   useEffect(() => {
@@ -26,25 +24,32 @@ const ModalRegistroHabitacion = ({
   }, [mostrarModal]);
 
   const handleRegistrar = async () => {
-    if (deshabilitado) return;
+    // Validación extra de seguridad antes de enviar
+    const num = parseInt(nuevaHabitacion.numero);
+    if (isNaN(num) || num < 1 || num > 25) return;
 
+    if (deshabilitado) return;
     setDeshabilitado(true);
 
-    // 👇 SOLO enviar lo que existe en la BD
     const habitacionLimpia = {
       numero: nuevaHabitacion.numero,
       tipo: nuevaHabitacion.tipo,
       precio: Number(nuevaHabitacion.precio),
-      estado: "disponible", // opcional (ya tiene default en BD)
+      estado: "disponible",
     };
 
     await agregarHabitacion(habitacionLimpia);
-
     setDeshabilitado(false);
   };
 
-  // ✅ Validación corregida
+  // Validamos que el número esté entre 1 y 25
+  const numeroValido =
+    nuevaHabitacion.numero !== "" &&
+    parseInt(nuevaHabitacion.numero) >= 1 &&
+    parseInt(nuevaHabitacion.numero) <= 25;
+
   const esFormularioValido =
+    numeroValido &&
     nuevaHabitacion.numero?.trim() !== "" &&
     nuevaHabitacion.precio !== "" &&
     Number(nuevaHabitacion.precio) > 0;
@@ -62,29 +67,41 @@ const ModalRegistroHabitacion = ({
       </Modal.Header>
 
       <Modal.Body>
+        {/* Alerta visual para que el usuario sepa el límite */}
+        <Alert variant="info" className="py-2 small">
+          <i className="bi bi-info-circle me-2"></i>
+          El hotel solo cuenta con <strong>25 habitaciones</strong> (1 - 25).
+        </Alert>
+
         <Form>
           <Form.Group className="mb-3">
             <Form.Label>Número de Habitación *</Form.Label>
             <Form.Control
-              type="text"
+              type="number" 
               name="numero"
               value={nuevaHabitacion.numero || ""}
               onChange={manejoCambioInput}
-              placeholder="101, 202, 305"
+              placeholder="Ej: 15"
+              min="1"
+              max="25"
+              isInvalid={nuevaHabitacion.numero !== "" && !numeroValido}
               required
             />
+            <Form.Control.Feedback type="invalid">
+              El número debe estar entre 1 y 25.
+            </Form.Control.Feedback>
           </Form.Group>
 
           <Form.Group className="mb-3">
             <Form.Label>Tipo de Habitación *</Form.Label>
             <Form.Select
               name="tipo"
-              value={nuevaHabitacion.tipo || "individual"}
+              value={nuevaHabitacion.tipo || "unipersonal"}
               onChange={manejoCambioInput}
             >
-              {tiposHabitacion.map((tipo) => (
-                <option key={tipo} value={tipo}>
-                  {tipo}
+              {tiposHabitacion.map((t) => (
+                <option key={t.value} value={t.value}>
+                  {t.label}
                 </option>
               ))}
             </Form.Select>
@@ -114,6 +131,8 @@ const ModalRegistroHabitacion = ({
           variant="primary"
           onClick={handleRegistrar}
           disabled={!esFormularioValido || deshabilitado}
+          className="color-navbar border-0"
+          style={{ backgroundColor: "#0F5C4F" }}
         >
           {deshabilitado ? "Guardando..." : "Guardar"}
         </Button>
