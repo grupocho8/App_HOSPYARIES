@@ -11,7 +11,7 @@ import Clientes from "./views/Clientes";
 import Habitaciones from "./views/Habitaciones";
 import Reservaciones from "./views/Reservaciones";
 import Turnos from "./views/Turnos";
-import Ventas from "./views/Ventas";
+import ControlVentas from "./views/Ventas";
 import Catalogo from "./views/Catalogo";
 import Login from "./views/Login";
 import Pagina404 from "./views/Pagina404";
@@ -40,7 +40,7 @@ const App = () => {
           
           <Route path='/turnos' element={<RutaProtegida><Turnos /></RutaProtegida>} />
           
-          <Route path='/ventas' element={<RutaProtegida><Ventas /></RutaProtegida>} />
+          <Route path='/controlventas' element={<RutaProtegida><ControlVentas/></RutaProtegida>} />
 
           {/* Manejo de errores */}
           <Route path='*' element={<Pagina404 />} />
