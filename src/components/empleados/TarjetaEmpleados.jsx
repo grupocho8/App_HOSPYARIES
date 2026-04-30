@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from "react";
-import { Card, Row, Col, Spinner, Button } from "react-bootstrap";
+import { Card, Row, Col, Spinner, Button, Badge } from "react-bootstrap";
 import "bootstrap-icons/font/bootstrap-icons.css";
 
 const TarjetaEmpleados = ({
@@ -10,7 +10,6 @@ const TarjetaEmpleados = ({
   const [cargando, setCargando] = useState(true);
   const [idTarjetaActiva, setIdTarjetaActiva] = useState(null);
 
-  // Actualizar estado de carga
   useEffect(() => {
     setCargando(!(empleados && empleados.length > 0));
   }, [empleados]);
@@ -75,6 +74,13 @@ const TarjetaEmpleados = ({
                       <strong>Rol:</strong> {empleado.rol}
                       <br />
                       <strong>Usuario:</strong> {empleado.usuario}
+                      <br />
+
+                      {/* ✅ NUEVO: TURNO */}
+                      <strong>Turno:</strong>{" "}
+                      <Badge bg={empleado.tipo_turno === "dia" ? "warning" : "dark"}>
+                        {empleado.tipo_turno === "dia" ? "Día" : "Noche"}
+                      </Badge>
                     </Card.Text>
                   </Card.Body>
 

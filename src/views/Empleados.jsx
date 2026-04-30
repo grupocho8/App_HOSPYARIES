@@ -21,11 +21,13 @@ const Empleados = () => {
   const [mostrarModalEdicion, setMostrarModalEdicion] = useState(false);
   const [mostrarModalEliminacion, setMostrarModalEliminacion] = useState(false);
 
+  // ✅ AGREGADO tipo_turno
   const [nuevoEmpleado, setNuevoEmpleado] = useState({
     nombre: "",
     rol: "",
     usuario: "",
     password: "",
+    tipo_turno: "",
   });
 
   const [toast, setToast] = useState({ mostrar: false, mensaje: "", tipo: "" });
@@ -71,15 +73,20 @@ const Empleados = () => {
     setNuevoEmpleado((prev) => ({ ...prev, [name]: value }));
   };
 
-const agregarEmpleado = async () => {
+  const agregarEmpleado = async () => {
     try {
       if (
-        !nuevoEmpleado.nombre.trim() || 
-        !nuevoEmpleado.rol.trim() || 
+        !nuevoEmpleado.nombre.trim() ||
+        !nuevoEmpleado.rol.trim() ||
         !nuevoEmpleado.usuario.trim() ||
-        !nuevoEmpleado.password.trim()
+        !nuevoEmpleado.password.trim() ||
+        !nuevoEmpleado.tipo_turno.trim() // ✅ VALIDACIÓN NUEVA
       ) {
-        setToast({ mostrar: true, mensaje: "Todos los campos son obligatorios.", tipo: "advertencia" });
+        setToast({
+          mostrar: true,
+          mensaje: "Todos los campos son obligatorios.",
+          tipo: "advertencia",
+        });
         return;
       }
 
@@ -90,6 +97,7 @@ const agregarEmpleado = async () => {
           rol: nuevoEmpleado.rol,
           usuario: nuevoEmpleado.usuario,
           password: nuevoEmpleado.password,
+          tipo_turno: nuevoEmpleado.tipo_turno, // ✅ NUEVO
         },
       ]);
 
@@ -101,16 +109,24 @@ const agregarEmpleado = async () => {
         tipo: "exito",
       });
 
-      setNuevoEmpleado({ nombre: "", rol: "", usuario: "", password: "" });
+      // ✅ RESET con turno incluido
+      setNuevoEmpleado({
+        nombre: "",
+        rol: "",
+        usuario: "",
+        password: "",
+        tipo_turno: "",
+      });
+
       setMostrarModal(false);
       await cargarEmpleados();
 
     } catch (err) {
       console.error("Error al insertar:", err);
-      setToast({ 
-        mostrar: true, 
-        mensaje: "Error de servidor al registrar empleado.", 
-        tipo: "error" 
+      setToast({
+        mostrar: true,
+        mensaje: "Error de servidor al registrar empleado.",
+        tipo: "error",
       });
     }
   };

@@ -1,7 +1,14 @@
 import React from "react";
 import { Card, Form, Button } from "react-bootstrap";
 
-const FormularioVenta = ({ nuevaVenta, setNuevaVenta, agregarVenta, reservaciones, turnos }) => {
+const FormularioVenta = ({ 
+  nuevaVenta, 
+  setNuevaVenta, 
+  agregarVenta, 
+  reservaciones, 
+  empleados // ✅ CAMBIO
+}) => {
+
   const manejarCambio = (e) => {
     const { name, value } = e.target;
     setNuevaVenta({ ...nuevaVenta, [name]: value });
@@ -13,10 +20,17 @@ const FormularioVenta = ({ nuevaVenta, setNuevaVenta, agregarVenta, reservacione
         <h5 className="fw-bold mb-4 text-secondary">
           <i className="bi bi-plus-circle me-2"></i>Registrar Venta
         </h5>
+
         <Form onSubmit={(e) => { e.preventDefault(); agregarVenta(); }}>
+
+          {/* RESERVACIÓN */}
           <Form.Group className="mb-3">
             <Form.Label className="small fw-bold">Reservación / Cliente</Form.Label>
-            <Form.Select name="id_reservacion" value={nuevaVenta.id_reservacion} onChange={manejarCambio}>
+            <Form.Select 
+              name="id_reservacion" 
+              value={nuevaVenta.id_reservacion} 
+              onChange={manejarCambio}
+            >
               <option value="">Seleccione...</option>
               {reservaciones.map(res => (
                 <option key={res.id_reservacion} value={res.id_reservacion}>
@@ -26,18 +40,26 @@ const FormularioVenta = ({ nuevaVenta, setNuevaVenta, agregarVenta, reservacione
             </Form.Select>
           </Form.Group>
 
+          {/* 🔥 EMPLEADO + TURNO */}
           <Form.Group className="mb-3">
-            <Form.Label className="small fw-bold">Turno / Empleado</Form.Label>
-            <Form.Select name="id_turno" value={nuevaVenta.id_turno} onChange={manejarCambio}>
-              <option value="">Seleccione turno...</option>
-              {turnos.map(t => (
-                <option key={t.id_turno} value={t.id_turno}>
-                  {t.tipo_turno} - {t.empleados?.nombre}
+            <Form.Label className="small fw-bold">Empleado / Turno</Form.Label>
+            <Form.Select 
+              name="id_empleado" // ✅ CAMBIO CLAVE
+              value={nuevaVenta.id_empleado || ""} 
+              onChange={manejarCambio}
+            >
+              <option value="">Seleccione empleado...</option>
+
+              {empleados.map(emp => (
+                <option key={emp.id_empleado} value={emp.id_empleado}>
+                  {emp.nombre} - {emp.tipo_turno === "dia" ? "Día" : "Noche"}
                 </option>
               ))}
+
             </Form.Select>
           </Form.Group>
 
+          {/* MONTO */}
           <Form.Group className="mb-4">
             <Form.Label className="small fw-bold">Monto (C$)</Form.Label>
             <Form.Control 
@@ -52,6 +74,7 @@ const FormularioVenta = ({ nuevaVenta, setNuevaVenta, agregarVenta, reservacione
           <Button type="submit" className="w-100 color-navbar border-0 py-2">
             Confirmar venta
           </Button>
+
         </Form>
       </Card.Body>
     </Card>

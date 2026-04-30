@@ -42,7 +42,8 @@ const ModalEdicionEmpleados = ({
       if (
         !empleadoAEditar.nombre.trim() ||
         !empleadoAEditar.rol.trim() ||
-        !empleadoAEditar.usuario.trim()
+        !empleadoAEditar.usuario.trim() ||
+        !empleadoAEditar.tipo_turno // ✅ VALIDACIÓN NUEVA
       ) {
         setToast({
           mostrar: true,
@@ -77,6 +78,7 @@ const ModalEdicionEmpleados = ({
           rol: empleadoAEditar.rol,
           usuario: empleadoAEditar.usuario.trim(),
           password: empleadoAEditar.password,
+          tipo_turno: empleadoAEditar.tipo_turno, // ✅ NUEVO
         })
         .eq("id_empleado", empleadoAEditar.id_empleado);
 
@@ -145,6 +147,20 @@ const ModalEdicionEmpleados = ({
             </Form.Select>
           </Form.Group>
 
+          {/* 🔥 NUEVO: TURNO */}
+          <Form.Group className="mb-3">
+            <Form.Label>Turno</Form.Label>
+            <Form.Select
+              name="tipo_turno"
+              value={empleadoAEditar.tipo_turno || ""}
+              onChange={manejoCambioInputEdicion}
+            >
+              <option value="">Seleccione turno</option>
+              <option value="dia">Día</option>
+              <option value="noche">Noche</option>
+            </Form.Select>
+          </Form.Group>
+
           {/* USUARIO */}
           <Form.Group className="mb-3">
             <Form.Label>Usuario</Form.Label>
@@ -157,7 +173,7 @@ const ModalEdicionEmpleados = ({
             />
           </Form.Group>
 
-          {/* PASSWORD CON OJO 👁️ */}
+          {/* PASSWORD */}
           <Form.Group className="mb-3">
             <Form.Label>Password</Form.Label>
             <InputGroup>
@@ -202,6 +218,7 @@ const ModalEdicionEmpleados = ({
             !nombreValido ||
             !passwordValido ||
             empleadoAEditar.nombre.trim() === "" ||
+            !empleadoAEditar.tipo_turno || // ✅ BLOQUEO SI NO HAY TURNO
             deshabilitado
           }
           className="color-navbar border-0"

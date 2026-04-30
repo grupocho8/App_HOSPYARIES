@@ -10,7 +10,6 @@ import Inicio from "./views/Inicio";
 import Clientes from "./views/Clientes";
 import Habitaciones from "./views/Habitaciones";
 import Reservaciones from "./views/Reservaciones";
-import Turnos from "./views/Turnos";
 import ControlVentas from "./views/Ventas";
 import Catalogo from "./views/Catalogo";
 import Login from "./views/Login";
@@ -38,7 +37,6 @@ const App = () => {
           
           <Route path='/empleados' element={<RutaProtegida><Empleados /></RutaProtegida>} />
           
-          <Route path='/turnos' element={<RutaProtegida><Turnos /></RutaProtegida>} />
           
           <Route path='/controlventas' element={<RutaProtegida><ControlVentas/></RutaProtegida>} />
 

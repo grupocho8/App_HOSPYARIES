@@ -1,5 +1,5 @@
 import React from "react";
-import { Table, Button } from "react-bootstrap";
+import { Table, Button, Badge } from "react-bootstrap";
 import "bootstrap-icons/font/bootstrap-icons.css";
 
 const TablaEmpleados = ({ empleados, abrirModalEdicion, abrirModalEliminacion }) => {
@@ -20,6 +20,7 @@ const TablaEmpleados = ({ empleados, abrirModalEdicion, abrirModalEliminacion })
               <th>Nombre</th>
               <th>Rol</th>
               <th>Usuario</th>
+              <th>Turno</th> {/* ✅ NUEVO */}
               <th className="text-center">Acciones</th>
             </tr>
           </thead>
@@ -27,9 +28,20 @@ const TablaEmpleados = ({ empleados, abrirModalEdicion, abrirModalEliminacion })
             {empleados.map((empleado, index) => (
               <tr key={empleado.id_empleado}>
                 <td>{index + 1}</td>
+
                 <td className="fw-semibold">{empleado.nombre}</td>
+
                 <td>{empleado.rol}</td>
+
                 <td>{empleado.usuario}</td>
+
+                {/* ✅ TURNO BONITO */}
+                <td>
+                  <Badge bg={empleado.tipo_turno === "dia" ? "warning" : "dark"}>
+                    {empleado.tipo_turno === "dia" ? "Día" : "Noche"}
+                  </Badge>
+                </td>
+
                 <td className="text-center">
                   <Button
                     variant="outline-warning"
