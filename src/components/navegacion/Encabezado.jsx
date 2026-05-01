@@ -92,23 +92,6 @@ const Encabezado = () => {
               {mostrarMenu ? <i className="bi-images me-2"></i> : null}
               <strong>Empleados</strong>
             </Nav.Link>
-
-            <Nav.Link
-              onClick={() => manejarNavegacion("/habitaciones")}
-              className={mostrarMenu ? "color-texto-marca" : "text-dark"}
-            >
-              {mostrarMenu ? <i className="bi-door-open-fill me-2"></i> : null}
-              <strong>Habitaciones</strong>
-            </Nav.Link>
-
-            <Nav.Link
-              onClick={() => manejarNavegacion("/reservaciones")}
-              className={mostrarMenu ? "color-texto-marca" : "text-dark"}
-            >
-              {mostrarMenu ? <i className="bi-calendar-check-fill me-2"></i> : null}
-              <strong>Reservaciones</strong>
-            </Nav.Link>
-
            
             <Nav.Link
               onClick={() => manejarNavegacion("/controlventas")}
