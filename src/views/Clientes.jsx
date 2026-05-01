@@ -9,6 +9,7 @@ import ModalRegistroCliente from "../components/clientes/ModalRegistroCliente";
 import NotificacionOperacion from "../components/NotificacionOperacion";
 import ModalEdicionCliente from "../components/clientes/ModalEdicionCliente";
 import ModalEliminacionCliente from "../components/clientes/ModalEliminarCliente";
+import CuadroBusquedas from "../components/busquedas/CuadroBusquedas";
 
 const Clientes = () => {
   // ==================== ESTADOS ====================
