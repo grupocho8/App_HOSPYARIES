@@ -1,175 +1,149 @@
-import React, { useState, useEffect, useCallback } from "react";
-import { Card, Row, Col, Spinner, Button, Image } from "react-bootstrap";
+import React from "react";
+import { Row, Col, Card, Button } from "react-bootstrap";
 import "bootstrap-icons/font/bootstrap-icons.css";
 
-const TarjetaHabitaciones = ({
-  habitaciones,
-  abrirModalEdicion,
-  abrirModalEliminacion,
+const TablaHabitaciones = ({ 
+  habitaciones, 
+  abrirModalEdicion, 
+  abrirModalEliminacion 
 }) => {
-  const [cargando, setCargando] = useState(true);
-  const [idTarjetaActiva, setIdTarjetaActiva] = useState(null);
 
-  useEffect(() => {
-    setCargando(!(habitaciones && habitaciones.length > 0));
-  }, [habitaciones]);
+  // --- Tu Lógica de Estadísticas (Sin cambios) ---
+  const total = habitaciones?.length || 0;
+  const disponibles = habitaciones?.filter(h => h.estado === 'disponible').length || 0;
+  const ocupadas = habitaciones?.filter(h => h.estado === 'ocupada').length || 0;
+  const reservadas = habitaciones?.filter(h => h.estado === 'reservada').length || 0;
+  
+  // Cálculo de Ingresos (Suma de precios de habitaciones ocupadas)
+  const ingresosOcupadas = habitaciones
+    ?.filter(h => h.estado === 'ocupada')
+    .reduce((acc, h) => acc + parseFloat(h.precio || 0), 0) || 0;
+  
+  const tasaOcupacion = total > 0 ? ((ocupadas / total) * 100).toFixed(0) : 0;
 
-  const manejarTeclaEscape = useCallback((evento) => {
-    if (evento.key === "Escape") setIdTarjetaActiva(null);
-  }, []);
-
-  useEffect(() => {
-    window.addEventListener("keydown", manejarTeclaEscape);
-    return () => window.removeEventListener("keydown", manejarTeclaEscape);
-  }, [manejarTeclaEscape]);
-
-  const alternarTarjetaActiva = (id) => {
-    setIdTarjetaActiva((anterior) => (anterior === id ? null : id));
+  // --- Tu Paleta de Colores ---
+  const colores = {
+    disponible: "#BFDAD6", 
+    reservada: "#a6e8de",  
+    ocupada: "#0F5C4F",    
+    textoOscuro: "#2F8F84",
+    blanco: "#ffffff"
   };
 
-  const getEstadoBadgeClass = (estado) => {
+  const getEstiloEstado = (estado) => {
     switch (estado) {
-      case "disponible":
-        return "bg-success";
-      case "ocupada":
-        return "bg-danger";
-      case "reservada":
-        return "bg-warning text-dark";
-      default:
-        return "bg-secondary";
+      case 'disponible': return { bg: colores.disponible, text: '#000' };
+      case 'ocupada': return { bg: colores.ocupada, text: '#fff' };
+      case 'reservada': return { bg: colores.reservada, text: '#000' };
+      default: return { bg: '#ccc', text: '#000' };
     }
   };
 
   return (
-    <>
-      {cargando ? (
-        <div className="text-center py-5">
-          <h5>Cargando habitaciones...</h5>
-          <Spinner animation="border" />
-        </div>
-      ) : (
-        <Row>
+    <div className="p-3" style={{ backgroundColor: "#f8f9fa", borderRadius: "15px" }}>
+      
+      {/* --- Sección de Resumen (Stats) --- */}
+      <Row className="mb-4 g-3">
+        <Col xs={6} md={3}>
+          <Card className="text-center border-0 shadow-sm h-100">
+            <Card.Body className="p-2 p-md-3">
+              <h6 className="text-muted small text-uppercase fw-bold" style={{ fontSize: '0.7rem' }}>Ocupación</h6>
+              <h3 className="fw-bold mb-0" style={{ color: colores.ocupada, fontSize: '1.2rem' }}>{tasaOcupacion}%</h3>
+            </Card.Body>
+          </Card>
+        </Col>
+        <Col xs={6} md={3}>
+          <Card className="text-center border-0 shadow-sm h-100">
+            <Card.Body className="p-2 p-md-3">
+              <h6 className="text-muted small text-uppercase fw-bold" style={{ fontSize: '0.7rem' }}>Disponibles</h6>
+              <h3 className="fw-bold mb-0" style={{ color: colores.textoOscuro, fontSize: '1.2rem' }}>{disponibles}</h3>
+            </Card.Body>
+          </Card>
+        </Col>
+        <Col xs={6} md={3}>
+          <Card className="text-center border-0 shadow-sm h-100">
+            <Card.Body className="p-2 p-md-3">
+              <h6 className="text-muted small text-uppercase fw-bold" style={{ fontSize: '0.7rem' }}>Ingresos</h6>
+              <h3 className="fw-bold mb-0" style={{ color: "#28a745", fontSize: '1.1rem' }}>
+                C$ {ingresosOcupadas.toLocaleString("es-NI")}
+              </h3>
+            </Card.Body>
+          </Card>
+        </Col>
+        <Col xs={6} md={3}>
+          <Card className="text-center border-0 shadow-sm h-100">
+            <Card.Body className="p-2 p-md-3">
+              <h6 className="text-muted small text-uppercase fw-bold" style={{ fontSize: '0.7rem' }}>Reservadas</h6>
+              <h3 className="fw-bold mb-0" style={{ color: "#6c757d", fontSize: '1.2rem' }}>{reservadas}</h3>
+            </Card.Body>
+          </Card>
+        </Col>
+      </Row>
+
+      {/* --- Cuadrícula de Habitaciones (Sin imágenes) --- */}
+      <h5 className="mb-3 fw-bold">Estado de habitaciones</h5>
+      {habitaciones && habitaciones.length > 0 ? (
+        <Row className="g-2 g-md-3">
           {habitaciones.map((habitacion) => {
-            const activa = idTarjetaActiva === habitacion.id_habitacion;
-
+            const estilo = getEstiloEstado(habitacion.estado);
             return (
-              <Col
-                key={habitacion.id_habitacion}
-                xs={12}
-                sm={6}
-                md={4}
-                lg={3}
-                className="mb-4"
-              >
-                <Card
-                  className={`border-0 shadow-sm h-100 ${
-                    activa ? "border border-primary" : ""
-                  }`}
-                  onClick={() =>
-                    alternarTarjetaActiva(habitacion.id_habitacion)
-                  }
-                  style={{ cursor: "pointer" }}
+              <Col key={habitacion.id_habitacion} xs={6} sm={4} md={3} lg={2}>
+                <Card 
+                  className="h-100 border-0 shadow-sm text-center"
+                  style={{ 
+                    backgroundColor: estilo.bg, 
+                    color: estilo.text,
+                    transition: "transform 0.2s",
+                    borderRadius: "12px"
+                  }}
                 >
-                  {/* 🔥 IMAGEN */}
-                  <div className="text-center mt-3">
-                    {habitacion.url_imagen ? (
-                      <Image
-                        src={habitacion.url_imagen}
-                        style={{
-                          width: "100%",
-                          height: "140px",
-                          objectFit: "cover",
-                          borderRadius: "8px",
-                        }}
-                      />
-                    ) : (
-                      <div
-                        className="bg-light d-flex align-items-center justify-content-center rounded"
-                        style={{
-                          width: "100%",
-                          height: "140px",
-                        }}
+                  <Card.Body className="d-flex flex-column justify-content-center align-items-center py-3 py-md-4">
+                    {/* Número de habitación destacado ante la falta de imagen */}
+                    <div className="fs-3 fw-bold mb-1">{habitacion.numero}</div>
+                    
+                    <div className="fw-bold text-uppercase mb-2" style={{ fontSize: '0.65rem', letterSpacing: '0.5px' }}>
+                      {habitacion.estado}
+                    </div>
+                    
+                    <div className="small opacity-75 text-capitalize mb-3" style={{ fontSize: '0.75rem' }}>
+                      {habitacion.tipo} <br/>
+                      <span className="fw-bold">C$ {parseFloat(habitacion.precio).toLocaleString("es-NI")}</span>
+                    </div>
+                    
+                    {/* Botones de acción */}
+                    <div className="d-flex gap-2">
+                      <Button 
+                        variant="light" 
+                        size="sm" 
+                        className="rounded-circle shadow-sm d-flex align-items-center justify-content-center"
+                        style={{ width: "32px", height: "32px" }}
+                        onClick={() => abrirModalEdicion(habitacion)}
                       >
-                        <i className="bi bi-image fs-1 text-muted"></i>
-                      </div>
-                    )}
-                  </div>
-
-                  <Card.Body className="text-center">
-                    <Card.Title>
-                      Habitación {habitacion.numero}
-                    </Card.Title>
-
-                    <Card.Text className="text-muted small text-capitalize">
-                      <strong>Tipo:</strong> {habitacion.tipo}
-                    </Card.Text>
-
-                    <div className="d-flex justify-content-between align-items-center mt-2">
-                      <span className="fw-bold text-success">
-                        C$ {parseFloat(habitacion.precio).toLocaleString("es-NI", {
-                          minimumFractionDigits: 2,
-                        })}
-                      </span>
-
-                      <span
-                        className={`badge text-capitalize ${getEstadoBadgeClass(
-                          habitacion.estado
-                        )}`}
+                        <i className="bi bi-pencil text-dark"></i>
+                      </Button>
+                      <Button 
+                        variant="light" 
+                        size="sm" 
+                        className="rounded-circle shadow-sm d-flex align-items-center justify-content-center"
+                        style={{ width: "32px", height: "32px" }}
+                        onClick={() => abrirModalEliminacion(habitacion)}
                       >
-                        {habitacion.estado}
-                      </span>
+                        <i className="bi bi-trash text-danger"></i>
+                      </Button>
                     </div>
                   </Card.Body>
-
-                  {/* 🔥 BOTONES OVERLAY */}
-                  {activa && (
-                    <div
-                      style={{
-                        position: "absolute",
-                        top: 0,
-                        left: 0,
-                        width: "100%",
-                        height: "100%",
-                        background: "rgba(0,0,0,0.4)",
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "center",
-                        borderRadius: "10px",
-                      }}
-                    >
-                      <div className="d-flex gap-2">
-                        <Button
-                          variant="warning"
-                          size="sm"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            abrirModalEdicion(habitacion);
-                          }}
-                        >
-                          <i className="bi bi-pencil"></i>
-                        </Button>
-
-                        <Button
-                          variant="danger"
-                          size="sm"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            abrirModalEliminacion(habitacion);
-                          }}
-                        >
-                          <i className="bi bi-trash"></i>
-                        </Button>
-                      </div>
-                    </div>
-                  )}
                 </Card>
               </Col>
             );
           })}
         </Row>
+      ) : (
+        <div className="text-center py-5">
+          <p className="text-muted">No hay habitaciones registradas para mostrar.</p>
+        </div>
       )}
-    </>
+    </div>
   );
 };
 
-export default TarjetaHabitaciones;
+export default TablaHabitaciones;
