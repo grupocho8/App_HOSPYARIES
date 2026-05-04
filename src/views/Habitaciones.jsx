@@ -121,61 +121,56 @@ const Habitaciones = () => {
   };
 
   // ==================== AGREGAR CON IMAGEN ====================
-  const agregarHabitacion = async () => {
-    try {
-      if (!nuevaHabitacion.numero.trim() || !nuevaHabitacion.precio) {
-        setToast({
-          mostrar: true,
-          mensaje: "Debe llenar Número y Precio",
-          tipo: "advertencia",
-        });
-        return;
-      }
-
-      let urlImagen = null;
-
-      // 🔥 SI HAY IMAGEN → SUBIR
-      if (nuevaHabitacion.archivo) {
-        urlImagen = await subirImagen(nuevaHabitacion.archivo);
-      }
-
-      const { error } = await supabase.from("habitaciones").insert([
-        {
-          numero: nuevaHabitacion.numero.trim(),
-          tipo: nuevaHabitacion.tipo,
-          precio: parseFloat(nuevaHabitacion.precio),
-          estado: "disponible",
-          url_imagen: urlImagen, // 🔥 GUARDAR
-        },
-      ]);
-
-      if (error) throw error;
-
+  // 🔥 AHORA RECIBE LOS DATOS DESDE EL MODAL
+const agregarHabitacion = async (habitacion) => {
+  try {
+    if (!habitacion.numero || !habitacion.precio) {
       setToast({
         mostrar: true,
-        mensaje: `Habitación ${nuevaHabitacion.numero} registrada`,
-        tipo: "exito",
+        mensaje: "Debe llenar Número y Precio",
+        tipo: "advertencia",
       });
-
-      setNuevaHabitacion({
-        numero: "",
-        tipo: "unipersonal",
-        precio: "",
-        archivo: null,
-      });
-
-      setMostrarModal(false);
-      await cargarHabitaciones();
-
-    } catch (err) {
-      console.error(err.message);
-      setToast({
-        mostrar: true,
-        mensaje: err.message || "Error al registrar",
-        tipo: "error",
-      });
+      return;
     }
-  };
+
+    const { error } = await supabase.from("habitaciones").insert([
+      {
+        numero: habitacion.numero.trim(),
+        tipo: habitacion.tipo,
+        precio: parseFloat(habitacion.precio),
+        estado: habitacion.estado,
+        url_imagen: habitacion.url_imagen, // 🔥 AQUÍ ESTÁ LA CLAVE
+      },
+    ]);
+
+    if (error) throw error;
+
+    setToast({
+      mostrar: true,
+      mensaje: `Habitación ${habitacion.numero} registrada`,
+      tipo: "exito",
+    });
+
+    setNuevaHabitacion({
+      numero: "",
+      tipo: "unipersonal",
+      precio: "",
+      archivo: null,
+    });
+
+    setMostrarModal(false);
+    await cargarHabitaciones();
+
+  } catch (err) {
+    console.error(err.message);
+    setToast({
+      mostrar: true,
+      mensaje: err.message || "Error al registrar",
+      tipo: "error",
+    });
+  }
+};
+
 
   return (
     <Container className="mt-3">

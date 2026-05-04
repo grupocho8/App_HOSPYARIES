@@ -10,7 +10,7 @@ const ModalRegistroHabitacion = ({
   agregarHabitacion,
 }) => {
   const [deshabilitado, setDeshabilitado] = useState(false);
-  const [archivo, setArchivo] = useState(null); // 🔥 NUEVO
+  const [archivo, setArchivo] = useState(null);
 
   const tiposHabitacion = [
     { label: "Unipersonal", value: "unipersonal" },
@@ -22,11 +22,10 @@ const ModalRegistroHabitacion = ({
   useEffect(() => {
     if (!mostrarModal) {
       setDeshabilitado(false);
-      setArchivo(null); // 🔥 limpiar imagen
+      setArchivo(null);
     }
   }, [mostrarModal]);
 
-  // 🔥 MANEJAR IMAGEN
   const manejarArchivo = (e) => {
     const file = e.target.files[0];
     if (file) setArchivo(file);
@@ -42,12 +41,12 @@ const ModalRegistroHabitacion = ({
     let urlImagen = null;
 
     try {
-      // 🔥 SUBIR IMAGEN A SUPABASE
+      // 🔥 SUBIR IMAGEN
       if (archivo) {
         const nombreArchivo = `habitacion_${Date.now()}_${archivo.name}`;
 
         const { error: errorUpload } = await supabase.storage
-          .from("imagenes") // 👈 tu bucket
+          .from("imagenes")
           .upload(nombreArchivo, archivo);
 
         if (errorUpload) throw errorUpload;
@@ -59,15 +58,17 @@ const ModalRegistroHabitacion = ({
         urlImagen = data.publicUrl;
       }
 
-      const habitacionLimpia = {
+      // 🔥 ENVIAR TODO (INCLUYENDO IMAGEN)
+      await agregarHabitacion({
         numero: nuevaHabitacion.numero,
         tipo: nuevaHabitacion.tipo,
         precio: Number(nuevaHabitacion.precio),
         estado: "disponible",
-        url_imagen: urlImagen, // 🔥 GUARDAR IMAGEN
-      };
+        url_imagen: urlImagen,
+      });
 
-      await agregarHabitacion(habitacionLimpia);
+      setArchivo(null);
+      setMostrarModal(false);
 
     } catch (error) {
       console.error("Error subiendo imagen:", error);
@@ -88,12 +89,7 @@ const ModalRegistroHabitacion = ({
     Number(nuevaHabitacion.precio) > 0;
 
   return (
-    <Modal
-      show={mostrarModal}
-      onHide={() => setMostrarModal(false)}
-      backdrop="static"
-      centered
-    >
+    <Modal show={mostrarModal} onHide={() => setMostrarModal(false)} backdrop="static" centered>
       <Modal.Header closeButton>
         <Modal.Title>Nueva Habitación</Modal.Title>
       </Modal.Header>
@@ -104,8 +100,6 @@ const ModalRegistroHabitacion = ({
         </Alert>
 
         <Form>
-
-          {/* NUMERO */}
           <Form.Group className="mb-3">
             <Form.Label>Número *</Form.Label>
             <Form.Control
@@ -119,7 +113,6 @@ const ModalRegistroHabitacion = ({
             />
           </Form.Group>
 
-          {/* TIPO */}
           <Form.Group className="mb-3">
             <Form.Label>Tipo *</Form.Label>
             <Form.Select
@@ -135,7 +128,6 @@ const ModalRegistroHabitacion = ({
             </Form.Select>
           </Form.Group>
 
-          {/* PRECIO */}
           <Form.Group className="mb-3">
             <Form.Label>Precio *</Form.Label>
             <Form.Control
@@ -146,16 +138,10 @@ const ModalRegistroHabitacion = ({
             />
           </Form.Group>
 
-          {/* 🔥 IMAGEN */}
           <Form.Group className="mb-3">
-            <Form.Label>Imagen de la habitación</Form.Label>
-            <Form.Control
-              type="file"
-              accept="image/*"
-              onChange={manejarArchivo}
-            />
+            <Form.Label>Imagen</Form.Label>
+            <Form.Control type="file" accept="image/*" onChange={manejarArchivo} />
           </Form.Group>
-
         </Form>
       </Modal.Body>
 
@@ -167,6 +153,7 @@ const ModalRegistroHabitacion = ({
         <Button
           onClick={handleRegistrar}
           disabled={!esFormularioValido || deshabilitado}
+          style={{ backgroundColor: "#0F5C4F", border: "none" }}
         >
           {deshabilitado ? "Guardando..." : "Guardar"}
         </Button>
