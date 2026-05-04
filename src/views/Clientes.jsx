@@ -10,22 +10,22 @@ import NotificacionOperacion from "../components/NotificacionOperacion";
 import ModalEdicionCliente from "../components/clientes/ModalEdicionCliente";
 import ModalEliminacionCliente from "../components/clientes/ModalEliminarCliente";
 import CuadroBusquedas from "../components/busquedas/CuadroBusquedas";
+import Paginacion from "../components/ordenamiento/Paginacion"; // ✅ IMPORTADO
 
 const Clientes = () => {
   // ==================== ESTADOS ====================
   const [clientes, setClientes] = useState([]);
+  const [clientesFiltrados, setClientesFiltrados] = useState([]);
+  const [textoBusqueda, setTextoBusqueda] = useState("");
   const [cargando, setCargando] = useState(true);
 
-  // Estado del modal de registro (¡este era el que faltaba!)
   const [mostrarModal, setMostrarModal] = useState(false);
 
-  // Estados para modales de edición y eliminación
   const [clienteAEditar, setClienteAEditar] = useState(null);
   const [clienteAEliminar, setClienteAEliminar] = useState(null);
   const [mostrarModalEdicion, setMostrarModalEdicion] = useState(false);
   const [mostrarModalEliminacion, setMostrarModalEliminacion] = useState(false);
 
-  // Estado del formulario de nuevo cliente
   const [nuevoCliente, setNuevoCliente] = useState({
     nombre: "",
     apellido: "",
@@ -33,6 +33,47 @@ const Clientes = () => {
   });
 
   const [toast, setToast] = useState({ mostrar: false, mensaje: "", tipo: "" });
+
+  // ✅ PAGINACIÓN
+  const [registrosPorPagina, setRegistrosPorPagina] = useState(10);
+  const [paginaActual, setPaginaActual] = useState(1);
+
+  const clientesPaginados = clientesFiltrados.slice(
+    (paginaActual - 1) * registrosPorPagina,
+    paginaActual * registrosPorPagina
+  );
+
+  const establecerPaginaActual = (pagina) => {
+    setPaginaActual(pagina);
+  };
+
+  const establecerRegistrosPorPagina = (cantidad) => {
+    setRegistrosPorPagina(cantidad);
+    setPaginaActual(1);
+  };
+
+  // ==================== BÚSQUEDA ====================
+  const manejarBusqueda = (e) => {
+    setTextoBusqueda(e.target.value);
+  };
+
+  useEffect(() => {
+    if (!textoBusqueda.trim()) {
+      setClientesFiltrados(clientes);
+    } else {
+      const texto = textoBusqueda.toLowerCase();
+
+      const filtrados = clientes.filter((c) =>
+        c.nombre?.toLowerCase().includes(texto) ||
+        c.apellido?.toLowerCase().includes(texto) ||
+        c.cedula?.toLowerCase().includes(texto)
+      );
+
+      setClientesFiltrados(filtrados);
+    }
+
+    setPaginaActual(1); // 🔥 IMPORTANTE
+  }, [textoBusqueda, clientes]);
 
   // ==================== MÉTODOS DE MODALES ====================
   const abrirModalEdicion = (cliente) => {
@@ -57,6 +98,7 @@ const Clientes = () => {
       if (error) throw error;
 
       setClientes(data || []);
+      setClientesFiltrados(data || []);
     } catch (error) {
       console.error("Error al cargar clientes:", error.message);
       setToast({
@@ -69,7 +111,6 @@ const Clientes = () => {
     }
   };
 
-  // Carga inicial
   useEffect(() => {
     cargarClientes();
   }, []);
@@ -105,7 +146,6 @@ const Clientes = () => {
         tipo: "exito",
       });
 
-      // Limpiar y recargar (exactamente como pide la guía)
       setNuevoCliente({ nombre: "", apellido: "", cedula: "" });
       setMostrarModal(false);
       await cargarClientes();
@@ -117,56 +157,65 @@ const Clientes = () => {
 
   return (
     <Container className="mt-3">
-      {/* Título y botón Nuevo Cliente */}
       <Row className="align-items-center mb-3">
-        <Col xs={9} sm={7} md={7} lg={7} className="d-flex align-items-center">
-          <h3 className="mb-0">
-            <i className="bi-people-fill me-2"></i> Clientes
-          </h3>
+        <Col xs={9} sm={7} md={7} lg={7}>
+          <h3><i className="bi-people-fill me-2"></i> Clientes</h3>
         </Col>
+
         <Col xs={3} sm={5} md={5} lg={5} className="text-end">
-          <Button
-            onClick={() => setMostrarModal(true)}
-            size="md"
-            className="color-navbar border-0"
-          >
-            <i className="bi-plus-lg"></i>
-            <span className="d-none d-sm-inline ms-2">Nuevo Cliente</span>
+          <Button onClick={() => setMostrarModal(true)} className="color-navbar border-0">
+            Nuevo Cliente
           </Button>
         </Col>
       </Row>
 
       <hr />
 
-      {/* Spinner o contenido (tarjetas + tabla) */}
+      {/* BUSCADOR */}
+      <Row className="mb-3">
+        <Col md={6}>
+          <CuadroBusquedas
+            textoBusqueda={textoBusqueda}
+            manejarCambioBusqueda={manejarBusqueda}
+          />
+        </Col>
+      </Row>
+
       {cargando ? (
         <div className="text-center py-5">
-          <Spinner animation="border" variant="success" size="lg" />
-          <p className="mt-3">Cargando clientes...</p>
+          <Spinner animation="border" />
         </div>
       ) : (
         <>
-          {/* Tarjetas - Solo en móviles (guía E10) */}
           <Row className="d-lg-none">
             <TarjetaCliente
-              clientes={clientes}
+              clientes={clientesPaginados} // ✅ AQUÍ
               abrirModalEdicion={abrirModalEdicion}
               abrirModalEliminacion={abrirModalEliminacion}
             />
           </Row>
 
-          {/* Tabla - Solo en pantallas grandes (guía E9) */}
           <Row className="d-none d-lg-block">
             <TablaClientes
-              clientes={clientes}
+              clientes={clientesPaginados} // ✅ AQUÍ
               abrirModalEdicion={abrirModalEdicion}
               abrirModalEliminacion={abrirModalEliminacion}
+               paginaActual={paginaActual}              // ✅
+              registrosPorPagina={registrosPorPagina}  // ✅
             />
           </Row>
         </>
       )}
 
-      {/* Modal de Registro */}
+      {/* ✅ PAGINACIÓN */}
+      <Paginacion
+        registrosPorPagina={registrosPorPagina}
+        totalRegistros={clientesFiltrados.length}
+        paginaActual={paginaActual}
+        establecerPaginaActual={establecerPaginaActual}
+        establecerRegistrosPorPagina={establecerRegistrosPorPagina}
+      />
+
       <ModalRegistroCliente
         mostrarModal={mostrarModal}
         setMostrarModal={setMostrarModal}
@@ -174,26 +223,26 @@ const Clientes = () => {
         manejoCambioInput={manejoCambioInput}
         agregarCliente={agregarCliente}
       />
-      {/* Modal de Edición (Agregado) */}
-      <ModalEdicionCliente
-        mostrarModalEdicion={mostrarModalEdicion}
-        setMostrarModalEdicion={setMostrarModalEdicion}
-        clienteAEditar={clienteAEditar}
-        setClienteAEditar={setClienteAEditar}
-        supabase={supabase}
-        cargarClientes={cargarClientes}
-        setToast={setToast}
-      />
-      <ModalEliminacionCliente
-        mostrarModalEliminacion={mostrarModalEliminacion}
-        setMostrarModalEliminacion={setMostrarModalEliminacion}
-        cliente={clienteAEliminar}
-        supabase={supabase}
-        setToast={setToast}
-        cargarClientes={cargarClientes}
-      />
 
-      {/* Notificación */}
+      <ModalEdicionCliente {...{
+        mostrarModalEdicion,
+        setMostrarModalEdicion,
+        clienteAEditar,
+        setClienteAEditar,
+        supabase,
+        cargarClientes,
+        setToast
+      }} />
+
+      <ModalEliminacionCliente {...{
+        mostrarModalEliminacion,
+        setMostrarModalEliminacion,
+        cliente: clienteAEliminar,
+        supabase,
+        setToast,
+        cargarClientes
+      }} />
+
       <NotificacionOperacion
         mostrar={toast.mostrar}
         mensaje={toast.mensaje}

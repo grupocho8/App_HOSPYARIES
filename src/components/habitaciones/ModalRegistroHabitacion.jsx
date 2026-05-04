@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { Modal, Form, Button, Alert } from "react-bootstrap";
+import { supabase } from "../../database/supabaseconfig";
 
 const ModalRegistroHabitacion = ({
   mostrarModal,
@@ -9,6 +10,7 @@ const ModalRegistroHabitacion = ({
   agregarHabitacion,
 }) => {
   const [deshabilitado, setDeshabilitado] = useState(false);
+  const [archivo, setArchivo] = useState(null); // 🔥 NUEVO
 
   const tiposHabitacion = [
     { label: "Unipersonal", value: "unipersonal" },
@@ -20,29 +22,60 @@ const ModalRegistroHabitacion = ({
   useEffect(() => {
     if (!mostrarModal) {
       setDeshabilitado(false);
+      setArchivo(null); // 🔥 limpiar imagen
     }
   }, [mostrarModal]);
 
+  // 🔥 MANEJAR IMAGEN
+  const manejarArchivo = (e) => {
+    const file = e.target.files[0];
+    if (file) setArchivo(file);
+  };
+
   const handleRegistrar = async () => {
-    // Validación extra de seguridad antes de enviar
     const num = parseInt(nuevaHabitacion.numero);
     if (isNaN(num) || num < 1 || num > 25) return;
 
     if (deshabilitado) return;
     setDeshabilitado(true);
 
-    const habitacionLimpia = {
-      numero: nuevaHabitacion.numero,
-      tipo: nuevaHabitacion.tipo,
-      precio: Number(nuevaHabitacion.precio),
-      estado: "disponible",
-    };
+    let urlImagen = null;
 
-    await agregarHabitacion(habitacionLimpia);
+    try {
+      // 🔥 SUBIR IMAGEN A SUPABASE
+      if (archivo) {
+        const nombreArchivo = `habitacion_${Date.now()}_${archivo.name}`;
+
+        const { error: errorUpload } = await supabase.storage
+          .from("imagenes") // 👈 tu bucket
+          .upload(nombreArchivo, archivo);
+
+        if (errorUpload) throw errorUpload;
+
+        const { data } = supabase.storage
+          .from("imagenes")
+          .getPublicUrl(nombreArchivo);
+
+        urlImagen = data.publicUrl;
+      }
+
+      const habitacionLimpia = {
+        numero: nuevaHabitacion.numero,
+        tipo: nuevaHabitacion.tipo,
+        precio: Number(nuevaHabitacion.precio),
+        estado: "disponible",
+        url_imagen: urlImagen, // 🔥 GUARDAR IMAGEN
+      };
+
+      await agregarHabitacion(habitacionLimpia);
+
+    } catch (error) {
+      console.error("Error subiendo imagen:", error);
+    }
+
     setDeshabilitado(false);
   };
 
-  // Validamos que el número esté entre 1 y 25
   const numeroValido =
     nuevaHabitacion.numero !== "" &&
     parseInt(nuevaHabitacion.numero) >= 1 &&
@@ -59,7 +92,6 @@ const ModalRegistroHabitacion = ({
       show={mostrarModal}
       onHide={() => setMostrarModal(false)}
       backdrop="static"
-      keyboard={false}
       centered
     >
       <Modal.Header closeButton>
@@ -67,36 +99,32 @@ const ModalRegistroHabitacion = ({
       </Modal.Header>
 
       <Modal.Body>
-        {/* Alerta visual para que el usuario sepa el límite */}
         <Alert variant="info" className="py-2 small">
-          <i className="bi bi-info-circle me-2"></i>
           El hotel solo cuenta con <strong>25 habitaciones</strong> (1 - 25).
         </Alert>
 
         <Form>
+
+          {/* NUMERO */}
           <Form.Group className="mb-3">
-            <Form.Label>Número de Habitación *</Form.Label>
+            <Form.Label>Número *</Form.Label>
             <Form.Control
-              type="number" 
+              type="number"
               name="numero"
               value={nuevaHabitacion.numero || ""}
               onChange={manejoCambioInput}
-              placeholder="Ej: 15"
               min="1"
               max="25"
               isInvalid={nuevaHabitacion.numero !== "" && !numeroValido}
-              required
             />
-            <Form.Control.Feedback type="invalid">
-              El número debe estar entre 1 y 25.
-            </Form.Control.Feedback>
           </Form.Group>
 
+          {/* TIPO */}
           <Form.Group className="mb-3">
-            <Form.Label>Tipo de Habitación *</Form.Label>
+            <Form.Label>Tipo *</Form.Label>
             <Form.Select
               name="tipo"
-              value={nuevaHabitacion.tipo || "unipersonal"}
+              value={nuevaHabitacion.tipo}
               onChange={manejoCambioInput}
             >
               {tiposHabitacion.map((t) => (
@@ -107,18 +135,27 @@ const ModalRegistroHabitacion = ({
             </Form.Select>
           </Form.Group>
 
+          {/* PRECIO */}
           <Form.Group className="mb-3">
-            <Form.Label>Precio (C$) *</Form.Label>
+            <Form.Label>Precio *</Form.Label>
             <Form.Control
               type="number"
               name="precio"
               value={nuevaHabitacion.precio || ""}
               onChange={manejoCambioInput}
-              placeholder="1500"
-              min="1"
-              required
             />
           </Form.Group>
+
+          {/* 🔥 IMAGEN */}
+          <Form.Group className="mb-3">
+            <Form.Label>Imagen de la habitación</Form.Label>
+            <Form.Control
+              type="file"
+              accept="image/*"
+              onChange={manejarArchivo}
+            />
+          </Form.Group>
+
         </Form>
       </Modal.Body>
 
@@ -128,11 +165,8 @@ const ModalRegistroHabitacion = ({
         </Button>
 
         <Button
-          variant="primary"
           onClick={handleRegistrar}
           disabled={!esFormularioValido || deshabilitado}
-          className="color-navbar border-0"
-          style={{ backgroundColor: "#0F5C4F" }}
         >
           {deshabilitado ? "Guardando..." : "Guardar"}
         </Button>

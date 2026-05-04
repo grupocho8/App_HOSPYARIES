@@ -2,17 +2,19 @@ import React, { useEffect, useState } from "react";
 import { Container, Row, Col, Card, Table, Spinner, Button } from "react-bootstrap";
 import { supabase } from "../database/supabaseconfig";
 import NotificacionOperacion from "../components/NotificacionOperacion";
+import CuadroBusquedas from "../components/busquedas/CuadroBusquedas";
 
-// IMPORTACIONES DE COMPONENTES SIGUIENDO EL ESTÁNDAR
+// COMPONENTES
 import FormularioVenta from "../components/ventas/FormularioVenta";
-
 import ModalEdicionVenta from "../components/ventas/ModalEdicionVenta";
 import ModalEliminarVenta from "../components/ventas/ModalEliminarVenta";
 
 const Ventas = () => {
   const [ventas, setVentas] = useState([]);
+  const [ventasFiltradas, setVentasFiltradas] = useState([]);
   const [reservaciones, setReservaciones] = useState([]);
-  const [empleados, setEmpleados] = useState([]); // ✅ CAMBIO
+  const [empleados, setEmpleados] = useState([]);
+  const [textoBusqueda, setTextoBusqueda] = useState("");
   const [cargando, setCargando] = useState(true);
   const [toast, setToast] = useState({ mostrar: false, mensaje: "", tipo: "" });
 
@@ -20,12 +22,33 @@ const Ventas = () => {
   const [showEliminar, setShowEliminar] = useState(false);
   const [ventaSeleccionada, setVentaSeleccionada] = useState(null);
 
-  // ✅ CAMBIO
   const [nuevaVenta, setNuevaVenta] = useState({ 
     id_reservacion: "", 
     id_empleado: "", 
     monto: "" 
   });
+
+  // ==================== BÚSQUEDA ====================
+  const manejarBusqueda = (e) => {
+    setTextoBusqueda(e.target.value);
+  };
+
+  useEffect(() => {
+    if (!textoBusqueda.trim()) {
+      setVentasFiltradas(ventas);
+    } else {
+      const texto = textoBusqueda.toLowerCase();
+
+      const filtradas = ventas.filter((v) =>
+        v.reservaciones?.clientes?.nombre?.toLowerCase().includes(texto) ||
+        v.reservaciones?.habitaciones?.numero?.toString().toLowerCase().includes(texto) ||
+        v.empleados?.nombre?.toLowerCase().includes(texto) ||
+        v.empleados?.tipo_turno?.toLowerCase().includes(texto)
+      );
+
+      setVentasFiltradas(filtradas);
+    }
+  }, [textoBusqueda, ventas]);
 
   const cargarDatos = async () => {
     try {
@@ -35,12 +58,10 @@ const Ventas = () => {
         .from("reservaciones")
         .select("id_reservacion, clientes(nombre), habitaciones(numero)");
 
-      // ✅ NUEVO: empleados
       const { data: empData } = await supabase
         .from("empleados")
         .select("id_empleado, nombre, tipo_turno");
 
-      // ✅ NUEVO QUERY
       const { data: ventasData } = await supabase
         .from("ventas")
         .select(`
@@ -53,6 +74,7 @@ const Ventas = () => {
       setReservaciones(resData || []);
       setEmpleados(empData || []);
       setVentas(ventasData || []);
+      setVentasFiltradas(ventasData || []);
 
     } catch (error) {
       console.error(error);
@@ -66,7 +88,7 @@ const Ventas = () => {
       const { error } = await supabase.from("ventas").insert([{
         id_venta: crypto.randomUUID(),
         id_reservacion: nuevaVenta.id_reservacion,
-        id_empleado: nuevaVenta.id_empleado, // ✅ CAMBIO CLAVE
+        id_empleado: nuevaVenta.id_empleado,
         monto: parseFloat(nuevaVenta.monto),
         fecha: new Date().toISOString()
       }]);
@@ -131,20 +153,30 @@ const Ventas = () => {
             setNuevaVenta={setNuevaVenta}
             agregarVenta={agregarVenta}
             reservaciones={reservaciones}
-            empleados={empleados} // ✅ CAMBIO
+            empleados={empleados}
           />
 
           <Card className="border-0 shadow-sm mt-3">
             <Card.Body className="d-flex justify-content-between align-items-center">
               <span className="fw-bold text-muted">Total:</span>
               <h4 className="fw-bold mb-0 text-primary">
-                C$ {ventas.reduce((acc, v) => acc + parseFloat(v.monto || 0), 0).toFixed(2)}
+                C$ {ventasFiltradas.reduce((acc, v) => acc + parseFloat(v.monto || 0), 0).toFixed(2)}
               </h4>
             </Card.Body>
           </Card>
         </Col>
 
         <Col lg={9}>
+          {/* BUSCADOR */}
+          <Row className="mb-3">
+            <Col md={6}>
+              <CuadroBusquedas
+                textoBusqueda={textoBusqueda}
+                manejarCambioBusqueda={manejarBusqueda}
+              />
+            </Col>
+          </Row>
+
           <div className="bg-white p-3 rounded shadow-sm border">
             <Table hover className="align-middle mb-0">
               <thead className="table-light">
@@ -168,26 +200,15 @@ const Ventas = () => {
                     </td>
                   </tr>
                 ) : (
-                  ventas.map((v) => (
+                  ventasFiltradas.map((v) => (
                     <tr key={v.id_venta}>
                       <td>{v.id_venta.substring(0, 5)}</td>
                       <td>{v.reservaciones?.clientes?.nombre}</td>
                       <td>{v.reservaciones?.habitaciones?.numero}</td>
-
-                      {/* ✅ EMPLEADO */}
                       <td>{v.empleados?.nombre}</td>
-
-                      {/* ✅ TURNO */}
-                      <td>
-                        {v.empleados?.tipo_turno === "dia" ? "Día" : "Noche"}
-                      </td>
-
-                      <td className="fw-bold">
-                        C$ {parseFloat(v.monto).toFixed(2)}
-                      </td>
-
+                      <td>{v.empleados?.tipo_turno === "dia" ? "Día" : "Noche"}</td>
+                      <td className="fw-bold">C$ {parseFloat(v.monto).toFixed(2)}</td>
                       <td>{new Date(v.fecha).toLocaleDateString()}</td>
-
                       <td className="text-center">
                         <Button
                           variant="outline-warning"

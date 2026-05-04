@@ -1,5 +1,5 @@
 import React from "react";
-import { Table, Button } from "react-bootstrap";
+import { Table, Button, Image } from "react-bootstrap";
 import "bootstrap-icons/font/bootstrap-icons.css";
 
 const TablaHabitaciones = ({ 
@@ -17,6 +17,7 @@ const TablaHabitaciones = ({
           responsive 
           size="sm"
           className="align-middle"
+          style={{ tableLayout: "fixed" }}
         >
           <thead>
             <tr>
@@ -25,6 +26,7 @@ const TablaHabitaciones = ({
               <th>Tipo</th>
               <th>Precio</th>
               <th>Estado</th>
+              <th style={{ width: "80px" }}>Imagen</th> {/* 🔥 NUEVO */}
               <th className="text-center">Acciones</th>
             </tr>
           </thead>
@@ -61,6 +63,34 @@ const TablaHabitaciones = ({
                   >
                     {habitacion.estado}
                   </span>
+                </td>
+
+                {/* 🔥 IMAGEN */}
+                <td style={{ width: "80px", padding: "5px" }}>
+                  {habitacion.url_imagen ? (
+                    <Image
+                      src={habitacion.url_imagen}
+                      style={{
+                        width: "60px",
+                        height: "60px",
+                        objectFit: "cover",
+                        borderRadius: "6px",
+                        display: "block",
+                        margin: "auto",
+                      }}
+                    />
+                  ) : (
+                    <div
+                      className="bg-light d-flex align-items-center justify-content-center rounded"
+                      style={{
+                        width: "60px",
+                        height: "60px",
+                        margin: "auto",
+                      }}
+                    >
+                      <i className="bi bi-image text-muted"></i>
+                    </div>
+                  )}
                 </td>
 
                 <td className="text-center">

@@ -12,22 +12,19 @@ import TablaReservaciones from "../components/reservaciones/TablaReservaciones";
 import TarjetaReservaciones from "../components/reservaciones/TarjetaReservaciones";
 
 const Reservaciones = () => {
-  // --- ESTADOS DE DATOS ---
   const [reservaciones, setReservaciones] = useState([]);
   const [reservacionesFiltradas, setReservacionesFiltradas] = useState([]);
   const [clientes, setClientes] = useState([]);
   const [habitaciones, setHabitaciones] = useState([]);
   const [textoBusqueda, setTextoBusqueda] = useState("");
   const [cargando, setCargando] = useState(true);
-  const [vistaTarjetas, setVistaTarjetas] = useState(false); // Switch opcional de vista
+  const [vistaTarjetas, setVistaTarjetas] = useState(false);
 
-  // --- ESTADOS UI (Modales y Toast) ---
   const [mostrarModal, setMostrarModal] = useState(false);
   const [mostrarModalEdicion, setMostrarModalEdicion] = useState(false);
   const [mostrarModalEliminacion, setMostrarModalEliminacion] = useState(false);
   const [toast, setToast] = useState({ mostrar: false, mensaje: "", tipo: "" });
 
-  // --- ESTADOS DE OBJETOS ---
   const [nuevaReservacion, setNuevaReservacion] = useState({
     id_cliente: "",
     id_habitacion: "",
@@ -39,16 +36,13 @@ const Reservaciones = () => {
   const [reservacionEditar, setReservacionEditar] = useState(null);
   const [reservacionAEliminar, setReservacionAEliminar] = useState(null);
 
-  // --- CARGA DE DATOS ---
-  // Dentro de Reservaciones.jsx
   const cargarDatosReferenciales = async () => {
     const resClientes = await supabase.from("clientes").select("id_cliente, nombre");
 
-    // Cambiamos "Disponible" por "disponible"
     const resHabitaciones = await supabase
       .from("habitaciones")
       .select("id_habitacion, numero")
-      .eq("estado", "disponible"); // <--- Ajuste aquí
+      .eq("estado", "disponible");
 
     setClientes(resClientes.data || []);
     setHabitaciones(resHabitaciones.data || []);
@@ -67,6 +61,7 @@ const Reservaciones = () => {
         .order("fecha_creacion", { ascending: false });
 
       if (error) throw error;
+
       setReservaciones(data || []);
       setReservacionesFiltradas(data || []);
     } catch (err) {
@@ -81,30 +76,42 @@ const Reservaciones = () => {
     cargarReservaciones();
   }, []);
 
-  // --- FILTRADO ---
+  // ==================== BÚSQUEDA (CORREGIDA) ====================
   useEffect(() => {
-    const texto = textoBusqueda.toLowerCase().trim();
-    const filtrados = reservaciones.filter(res =>
-      res.clientes?.nombre.toLowerCase().includes(texto) ||
-      res.habitaciones?.numero.toLowerCase().includes(texto)
-    );
-    setReservacionesFiltradas(filtrados);
-  }, [textoBusqueda, reservaciones]);
+    if (!textoBusqueda.trim()) {
+      setReservacionesFiltradas(reservaciones);
+    } else {
+      const texto = textoBusqueda.toLowerCase();
 
-  // --- FUNCIONES CRUD ---
+      const filtrados = reservaciones.filter(res =>
+        res.clientes?.nombre?.toLowerCase().includes(texto) ||
+        res.habitaciones?.numero?.toString().toLowerCase().includes(texto)
+      );
+
+      setReservacionesFiltradas(filtrados);
+    }
+  }, [textoBusqueda, reservaciones]);
 
   const agregarReservacion = async () => {
     try {
       const { error } = await supabase.from("reservaciones").insert([
         {
-          id_reservacion: crypto.randomUUID(), // UUID Manual
+          id_reservacion: crypto.randomUUID(),
           ...nuevaReservacion
         }
       ]);
       if (error) throw error;
+
       setToast({ mostrar: true, mensaje: "Reservación creada", tipo: "exito" });
       setMostrarModal(false);
-      setNuevaReservacion({ id_cliente: "", id_habitacion: "", fecha_inicio: "", fecha_fin: "", estado: "Pendiente" });
+      setNuevaReservacion({
+        id_cliente: "",
+        id_habitacion: "",
+        fecha_inicio: "",
+        fecha_fin: "",
+        estado: "Pendiente"
+      });
+
       cargarReservaciones();
     } catch (err) {
       setToast({ mostrar: true, mensaje: "Error al crear reservación", tipo: "error" });
@@ -123,6 +130,7 @@ const Reservaciones = () => {
         .eq("id_reservacion", reservacionEditar.id_reservacion);
 
       if (error) throw error;
+
       setToast({ mostrar: true, mensaje: "Reservación actualizada", tipo: "exito" });
       setMostrarModalEdicion(false);
       cargarReservaciones();
@@ -139,6 +147,7 @@ const Reservaciones = () => {
         .eq("id_reservacion", reservacionAEliminar.id_reservacion);
 
       if (error) throw error;
+
       setToast({ mostrar: true, mensaje: "Registro eliminado", tipo: "exito" });
       setMostrarModalEliminacion(false);
       cargarReservaciones();
@@ -147,7 +156,6 @@ const Reservaciones = () => {
     }
   };
 
-  // --- HANDLERS PARA ABRIR MODALES ---
   const abrirModalEdicion = (res) => {
     setReservacionEditar(res);
     setMostrarModalEdicion(true);
@@ -191,7 +199,9 @@ const Reservaciones = () => {
       </Row>
 
       {cargando ? (
-        <div className="text-center my-5"><Spinner animation="border" variant="primary" /></div>
+        <div className="text-center my-5">
+          <Spinner animation="border" variant="primary" />
+        </div>
       ) : (
         vistaTarjetas ? (
           <TarjetaReservaciones
@@ -208,7 +218,6 @@ const Reservaciones = () => {
         )
       )}
 
-      {/* --- MODALES --- */}
       <ModalRegistroReservaciones
         mostrarModal={mostrarModal}
         setMostrarModal={setMostrarModal}

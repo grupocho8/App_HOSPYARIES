@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from "react";
-import { Card, Row, Col, Spinner, Button } from "react-bootstrap";
+import { Card, Row, Col, Spinner, Button, Image } from "react-bootstrap";
 import "bootstrap-icons/font/bootstrap-icons.css";
 
 const TarjetaHabitaciones = ({
@@ -27,7 +27,6 @@ const TarjetaHabitaciones = ({
     setIdTarjetaActiva((anterior) => (anterior === id ? null : id));
   };
 
-  // Solo los estados que pediste
   const getEstadoBadgeClass = (estado) => {
     switch (estado) {
       case "disponible":
@@ -66,17 +65,34 @@ const TarjetaHabitaciones = ({
                   className={`border-0 shadow-sm h-100 ${
                     activa ? "border border-primary" : ""
                   }`}
-                  onClick={() => alternarTarjetaActiva(habitacion.id_habitacion)}
+                  onClick={() =>
+                    alternarTarjetaActiva(habitacion.id_habitacion)
+                  }
+                  style={{ cursor: "pointer" }}
                 >
-                  {/* ICONO - Ajustado a tus tipos */}
+                  {/* 🔥 IMAGEN */}
                   <div className="text-center mt-3">
-                    <i 
-                      className={`bi fs-1 ${
-                        habitacion.tipo === "triple" || habitacion.tipo === "matrimonial"
-                          ? "bi-door-closed-fill"
-                          : "bi-door-open"
-                      }`}
-                    ></i>
+                    {habitacion.url_imagen ? (
+                      <Image
+                        src={habitacion.url_imagen}
+                        style={{
+                          width: "100%",
+                          height: "140px",
+                          objectFit: "cover",
+                          borderRadius: "8px",
+                        }}
+                      />
+                    ) : (
+                      <div
+                        className="bg-light d-flex align-items-center justify-content-center rounded"
+                        style={{
+                          width: "100%",
+                          height: "140px",
+                        }}
+                      >
+                        <i className="bi bi-image fs-1 text-muted"></i>
+                      </div>
+                    )}
                   </div>
 
                   <Card.Body className="text-center">
@@ -95,37 +111,55 @@ const TarjetaHabitaciones = ({
                         })}
                       </span>
 
-                      <span className={`badge text-capitalize ${getEstadoBadgeClass(habitacion.estado)}`}>
+                      <span
+                        className={`badge text-capitalize ${getEstadoBadgeClass(
+                          habitacion.estado
+                        )}`}
+                      >
                         {habitacion.estado}
                       </span>
                     </div>
                   </Card.Body>
 
-                  {/* BOTONES */}
+                  {/* 🔥 BOTONES OVERLAY */}
                   {activa && (
-                    <div className="text-center mb-3">
-                      <Button
-                        variant="outline-warning"
-                        size="sm"
-                        className="me-2"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          abrirModalEdicion(habitacion);
-                        }}
-                      >
-                        <i className="bi bi-pencil"></i>
-                      </Button>
+                    <div
+                      style={{
+                        position: "absolute",
+                        top: 0,
+                        left: 0,
+                        width: "100%",
+                        height: "100%",
+                        background: "rgba(0,0,0,0.4)",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        borderRadius: "10px",
+                      }}
+                    >
+                      <div className="d-flex gap-2">
+                        <Button
+                          variant="warning"
+                          size="sm"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            abrirModalEdicion(habitacion);
+                          }}
+                        >
+                          <i className="bi bi-pencil"></i>
+                        </Button>
 
-                      <Button
-                        variant="outline-danger"
-                        size="sm"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          abrirModalEliminacion(habitacion);
-                        }}
-                      >
-                        <i className="bi bi-trash"></i>
-                      </Button>
+                        <Button
+                          variant="danger"
+                          size="sm"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            abrirModalEliminacion(habitacion);
+                          }}
+                        >
+                          <i className="bi bi-trash"></i>
+                        </Button>
+                      </div>
                     </div>
                   )}
                 </Card>

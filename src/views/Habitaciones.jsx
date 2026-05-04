@@ -10,9 +10,12 @@ import ModalEdicionHabitacion from "../components/habitaciones/ModalEdicionHabit
 import ModalEliminacionHabitacion from "../components/habitaciones/ModalEliminacionHabitacion";
 
 import NotificacionOperacion from "../components/NotificacionOperacion";
+import CuadroBusquedas from "../components/busquedas/CuadroBusquedas";
 
 const Habitaciones = () => {
   const [habitaciones, setHabitaciones] = useState([]);
+  const [habitacionesFiltradas, setHabitacionesFiltradas] = useState([]);
+  const [textoBusqueda, setTextoBusqueda] = useState("");
   const [cargando, setCargando] = useState(true);
 
   const [mostrarModal, setMostrarModal] = useState(false);
@@ -22,13 +25,53 @@ const Habitaciones = () => {
   const [mostrarModalEdicion, setMostrarModalEdicion] = useState(false);
   const [mostrarModalEliminacion, setMostrarModalEliminacion] = useState(false);
 
+  // 🔥 AGREGAMOS archivo
   const [nuevaHabitacion, setNuevaHabitacion] = useState({
     numero: "",
     tipo: "unipersonal",
     precio: "",
+    archivo: null,
   });
 
   const [toast, setToast] = useState({ mostrar: false, mensaje: "", tipo: "" });
+
+  // ==================== SUBIR IMAGEN ====================
+  const subirImagen = async (archivo) => {
+    const nombreArchivo = `habitaciones/${Date.now()}_${archivo.name}`;
+
+    const { error } = await supabase.storage
+      .from("imagenes") // 👈 tu bucket
+      .upload(nombreArchivo, archivo);
+
+    if (error) throw error;
+
+    const { data } = supabase.storage
+      .from("imagenes")
+      .getPublicUrl(nombreArchivo);
+
+    return data.publicUrl;
+  };
+
+  // ==================== BÚSQUEDA ====================
+  const manejarBusqueda = (e) => {
+    setTextoBusqueda(e.target.value);
+  };
+
+  useEffect(() => {
+    if (!textoBusqueda.trim()) {
+      setHabitacionesFiltradas(habitaciones);
+    } else {
+      const texto = textoBusqueda.toLowerCase();
+
+      const filtradas = habitaciones.filter((h) =>
+        h.numero?.toString().toLowerCase().includes(texto) ||
+        h.tipo?.toLowerCase().includes(texto) ||
+        h.estado?.toLowerCase().includes(texto)
+      );
+
+      setHabitacionesFiltradas(filtradas);
+    }
+  }, [textoBusqueda, habitaciones]);
 
   const abrirModalEdicion = (habitacion) => {
     setHabitacionAEditar(habitacion);
@@ -52,6 +95,7 @@ const Habitaciones = () => {
       if (error) throw error;
 
       setHabitaciones(data || []);
+      setHabitacionesFiltradas(data || []);
     } catch (error) {
       console.error(error.message);
       setToast({
@@ -76,6 +120,7 @@ const Habitaciones = () => {
     }));
   };
 
+  // ==================== AGREGAR CON IMAGEN ====================
   const agregarHabitacion = async () => {
     try {
       if (!nuevaHabitacion.numero.trim() || !nuevaHabitacion.precio) {
@@ -87,12 +132,20 @@ const Habitaciones = () => {
         return;
       }
 
+      let urlImagen = null;
+
+      // 🔥 SI HAY IMAGEN → SUBIR
+      if (nuevaHabitacion.archivo) {
+        urlImagen = await subirImagen(nuevaHabitacion.archivo);
+      }
+
       const { error } = await supabase.from("habitaciones").insert([
         {
           numero: nuevaHabitacion.numero.trim(),
           tipo: nuevaHabitacion.tipo,
           precio: parseFloat(nuevaHabitacion.precio),
           estado: "disponible",
+          url_imagen: urlImagen, // 🔥 GUARDAR
         },
       ]);
 
@@ -108,10 +161,12 @@ const Habitaciones = () => {
         numero: "",
         tipo: "unipersonal",
         precio: "",
+        archivo: null,
       });
 
       setMostrarModal(false);
       await cargarHabitaciones();
+
     } catch (err) {
       console.error(err.message);
       setToast({
@@ -146,6 +201,15 @@ const Habitaciones = () => {
 
       <hr />
 
+      <Row className="mb-3">
+        <Col md={6}>
+          <CuadroBusquedas
+            textoBusqueda={textoBusqueda}
+            manejarCambioBusqueda={manejarBusqueda}
+          />
+        </Col>
+      </Row>
+
       {cargando ? (
         <div className="text-center py-5">
           <Spinner animation="border" />
@@ -155,7 +219,7 @@ const Habitaciones = () => {
         <>
           <Row className="d-lg-none">
             <TarjetaHabitaciones
-              habitaciones={habitaciones}
+              habitaciones={habitacionesFiltradas}
               abrirModalEdicion={abrirModalEdicion}
               abrirModalEliminacion={abrirModalEliminacion}
             />
@@ -163,7 +227,7 @@ const Habitaciones = () => {
 
           <Row className="d-none d-lg-block">
             <TablaHabitaciones
-              habitaciones={habitaciones}
+              habitaciones={habitacionesFiltradas}
               abrirModalEdicion={abrirModalEdicion}
               abrirModalEliminacion={abrirModalEliminacion}
             />
@@ -171,12 +235,14 @@ const Habitaciones = () => {
         </>
       )}
 
+      {/* 🔥 PASAMOS setNuevaHabitacion */}
       <ModalRegistroHabitacion
         mostrarModal={mostrarModal}
         setMostrarModal={setMostrarModal}
         nuevaHabitacion={nuevaHabitacion}
         manejoCambioInput={manejoCambioInput}
         agregarHabitacion={agregarHabitacion}
+        setNuevaHabitacion={setNuevaHabitacion}
       />
 
       <ModalEdicionHabitacion

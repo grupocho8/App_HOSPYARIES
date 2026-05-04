@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Modal, Form, Button, Alert } from "react-bootstrap";
+import { Modal, Form, Button, Alert, Image } from "react-bootstrap";
 
 const ModalEdicionHabitacion = ({
   mostrarModalEdicion,
@@ -33,7 +33,17 @@ const ModalEdicionHabitacion = ({
     }));
   };
 
-  // Validamos el rango permitido (1-25)
+  // 🔥 NUEVO: manejar archivo
+  const manejoArchivo = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      setHabitacionAEditar((prev) => ({
+        ...prev,
+        archivo: file,
+      }));
+    }
+  };
+
   const numeroEsValido =
     habitacionAEditar?.numero !== "" &&
     parseInt(habitacionAEditar?.numero) >= 1 &&
@@ -58,6 +68,25 @@ const ModalEdicionHabitacion = ({
         return;
       }
 
+      // 🔥 SUBIR IMAGEN SI EXISTE
+      let urlImagen = habitacionAEditar.url_imagen;
+
+      if (habitacionAEditar.archivo) {
+        const nombre = `habitacion_${Date.now()}`;
+
+        const { error: uploadError } = await supabase.storage
+          .from("imagenes")
+          .upload(nombre, habitacionAEditar.archivo);
+
+        if (uploadError) throw uploadError;
+
+        const { data } = supabase.storage
+          .from("imagenes")
+          .getPublicUrl(nombre);
+
+        urlImagen = data.publicUrl;
+      }
+
       const { error } = await supabase
         .from("habitaciones")
         .update({
@@ -65,6 +94,7 @@ const ModalEdicionHabitacion = ({
           tipo: habitacionAEditar.tipo,
           precio: parseFloat(habitacionAEditar.precio),
           estado: habitacionAEditar.estado,
+          url_imagen: urlImagen, // 🔥 NUEVO
         })
         .eq("id_habitacion", habitacionAEditar.id_habitacion);
 
@@ -104,7 +134,6 @@ const ModalEdicionHabitacion = ({
       </Modal.Header>
 
       <Modal.Body>
-        {/* Alerta de límite igual que en el registro */}
         <Alert variant="info" className="py-2 small">
           <i className="bi bi-info-circle me-2"></i>
           Rango de habitaciones permitido: <strong>1 a 25</strong>.
@@ -123,9 +152,6 @@ const ModalEdicionHabitacion = ({
               isInvalid={!numeroEsValido}
               required
             />
-            <Form.Control.Feedback type="invalid">
-              El número debe estar entre 1 y 25.
-            </Form.Control.Feedback>
           </Form.Group>
 
           <Form.Group className="mb-3">
@@ -168,6 +194,27 @@ const ModalEdicionHabitacion = ({
               ))}
             </Form.Select>
           </Form.Group>
+
+          {/* 🔥 MOSTRAR IMAGEN ACTUAL */}
+          {habitacionAEditar.url_imagen && (
+            <div className="mb-3 text-center">
+              <Image
+                src={habitacionAEditar.url_imagen}
+                style={{
+                  width: "120px",
+                  height: "120px",
+                  objectFit: "cover",
+                  borderRadius: "8px",
+                }}
+              />
+            </div>
+          )}
+
+          {/* 🔥 CAMBIAR IMAGEN */}
+          <Form.Group className="mb-3">
+            <Form.Label>Cambiar Imagen</Form.Label>
+            <Form.Control type="file" onChange={manejoArchivo} />
+          </Form.Group>
         </Form>
       </Modal.Body>
 
@@ -185,8 +232,8 @@ const ModalEdicionHabitacion = ({
           disabled={
             !numeroEsValido || !habitacionAEditar.precio || deshabilitado
           }
-          className="color-navbar border-0" 
-          style={{ backgroundColor: "#0F5C4F" }} 
+          className="color-navbar border-0"
+          style={{ backgroundColor: "#0F5C4F" }}
         >
           {deshabilitado ? "Actualizando..." : "Actualizar"}
         </Button>

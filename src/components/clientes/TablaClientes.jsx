@@ -2,7 +2,13 @@ import React from "react";
 import { Table, Button } from "react-bootstrap";
 import "bootstrap-icons/font/bootstrap-icons.css";
 
-const TablaClientes = ({ clientes, abrirModalEdicion, abrirModalEliminacion }) => {
+const TablaClientes = ({ 
+  clientes, 
+  abrirModalEdicion, 
+  abrirModalEliminacion,
+  paginaActual,              // ✅ NUEVO
+  registrosPorPagina         // ✅ NUEVO
+}) => {
   return (
     <>
       {clientes && clientes.length > 0 ? (
@@ -27,10 +33,16 @@ const TablaClientes = ({ clientes, abrirModalEdicion, abrirModalEliminacion }) =
           <tbody>
             {clientes.map((cliente, index) => (
               <tr key={cliente.id_cliente}>
-                <td>{index + 1}</td>
+                
+                {/* ✅ NUMERACIÓN CORREGIDA */}
+                <td>
+                  {(paginaActual - 1) * registrosPorPagina + index + 1}
+                </td>
+
                 <td className="fw-semibold">{cliente.nombre}</td>
                 <td>{cliente.apellido}</td>
                 <td>{cliente.cedula}</td>
+
                 <td className="d-none d-md-table-cell">
                   {new Date(cliente.fecha_registro).toLocaleDateString("es-NI", {
                     day: "2-digit",
@@ -38,6 +50,7 @@ const TablaClientes = ({ clientes, abrirModalEdicion, abrirModalEliminacion }) =
                     year: "numeric",
                   })}
                 </td>
+
                 <td className="text-center">
                   <Button
                     variant="outline-warning"
@@ -56,6 +69,7 @@ const TablaClientes = ({ clientes, abrirModalEdicion, abrirModalEliminacion }) =
                     <i className="bi bi-trash"></i>
                   </Button>
                 </td>
+
               </tr>
             ))}
           </tbody>

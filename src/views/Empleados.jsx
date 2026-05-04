@@ -9,9 +9,12 @@ import ModalRegistroEmpleados from "../components/empleados/ModalRegistroEmplead
 import NotificacionOperacion from "../components/NotificacionOperacion";
 import ModalEdicionEmpleados from "../components/empleados/ModalEdicionEmpleados";
 import ModalEliminarEmpleados from "../components/empleados/ModalEliminarEmpleados";
+import CuadroBusquedas from "../components/busquedas/CuadroBusquedas";
 
 const Empleados = () => {
   const [empleados, setEmpleados] = useState([]);
+  const [empleadosFiltrados, setEmpleadosFiltrados] = useState([]);
+  const [textoBusqueda, setTextoBusqueda] = useState("");
   const [cargando, setCargando] = useState(true);
 
   const [mostrarModal, setMostrarModal] = useState(false);
@@ -21,7 +24,6 @@ const Empleados = () => {
   const [mostrarModalEdicion, setMostrarModalEdicion] = useState(false);
   const [mostrarModalEliminacion, setMostrarModalEliminacion] = useState(false);
 
-  // ✅ AGREGADO tipo_turno
   const [nuevoEmpleado, setNuevoEmpleado] = useState({
     nombre: "",
     rol: "",
@@ -31,6 +33,28 @@ const Empleados = () => {
   });
 
   const [toast, setToast] = useState({ mostrar: false, mensaje: "", tipo: "" });
+
+  // ==================== BÚSQUEDA ====================
+  const manejarBusqueda = (e) => {
+    setTextoBusqueda(e.target.value);
+  };
+
+  useEffect(() => {
+    if (!textoBusqueda.trim()) {
+      setEmpleadosFiltrados(empleados);
+    } else {
+      const texto = textoBusqueda.toLowerCase();
+
+      const filtrados = empleados.filter((e) =>
+        e.nombre?.toLowerCase().includes(texto) ||
+        e.rol?.toLowerCase().includes(texto) ||
+        e.usuario?.toLowerCase().includes(texto) ||
+        e.tipo_turno?.toLowerCase().includes(texto)
+      );
+
+      setEmpleadosFiltrados(filtrados);
+    }
+  }, [textoBusqueda, empleados]);
 
   const abrirModalEdicion = (empleado) => {
     setEmpleadoAEditar(empleado);
@@ -52,6 +76,7 @@ const Empleados = () => {
       if (error) throw error;
 
       setEmpleados(data || []);
+      setEmpleadosFiltrados(data || []);
     } catch (error) {
       console.error("Error al cargar empleados:", error.message);
       setToast({
@@ -80,7 +105,7 @@ const Empleados = () => {
         !nuevoEmpleado.rol.trim() ||
         !nuevoEmpleado.usuario.trim() ||
         !nuevoEmpleado.password.trim() ||
-        !nuevoEmpleado.tipo_turno.trim() // ✅ VALIDACIÓN NUEVA
+        !nuevoEmpleado.tipo_turno.trim()
       ) {
         setToast({
           mostrar: true,
@@ -97,7 +122,7 @@ const Empleados = () => {
           rol: nuevoEmpleado.rol,
           usuario: nuevoEmpleado.usuario,
           password: nuevoEmpleado.password,
-          tipo_turno: nuevoEmpleado.tipo_turno, // ✅ NUEVO
+          tipo_turno: nuevoEmpleado.tipo_turno,
         },
       ]);
 
@@ -109,7 +134,6 @@ const Empleados = () => {
         tipo: "exito",
       });
 
-      // ✅ RESET con turno incluido
       setNuevoEmpleado({
         nombre: "",
         rol: "",
@@ -153,6 +177,16 @@ const Empleados = () => {
 
       <hr />
 
+      {/* BUSCADOR */}
+      <Row className="mb-3">
+        <Col md={6}>
+          <CuadroBusquedas
+            textoBusqueda={textoBusqueda}
+            manejarCambioBusqueda={manejarBusqueda}
+          />
+        </Col>
+      </Row>
+
       {cargando ? (
         <div className="text-center py-5">
           <Spinner animation="border" variant="success" size="lg" />
@@ -162,7 +196,7 @@ const Empleados = () => {
         <>
           <Row className="d-lg-none">
             <TarjetaEmpleados
-              empleados={empleados}
+              empleados={empleadosFiltrados}
               abrirModalEdicion={abrirModalEdicion}
               abrirModalEliminacion={abrirModalEliminacion}
             />
@@ -170,7 +204,7 @@ const Empleados = () => {
 
           <Row className="d-none d-lg-block">
             <TablaEmpleados
-              empleados={empleados}
+              empleados={empleadosFiltrados}
               abrirModalEdicion={abrirModalEdicion}
               abrirModalEliminacion={abrirModalEliminacion}
             />
