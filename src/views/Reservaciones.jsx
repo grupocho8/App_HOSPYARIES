@@ -166,93 +166,106 @@ const Reservaciones = () => {
     setMostrarModalEliminacion(true);
   };
 
-  return (
-    <Container className="mt-5">
-      <Row className="align-items-center mb-4">
-        <Col>
-          <h3><i className="bi bi-calendar-check-fill me-2"></i> Reservaciones</h3>
-        </Col>
-        <Col className="text-end">
-          <Button
-            variant="outline-secondary"
-            className="me-2"
-            onClick={() => setVistaTarjetas(!vistaTarjetas)}
-          >
-            {vistaTarjetas ? <i className="bi bi-table"></i> : <i className="bi bi-grid"></i>}
-          </Button>
-          <Button onClick={() => setMostrarModal(true)} className="color-navbar border-0">
-            Nueva Reservación
-          </Button>
-        </Col>
-      </Row>
+ return (
+  <Container className="mt-5 pt-4">
+    <Row className="align-items-center mb-4">
+      <Col xs={8}>
+        <h3 className="fw-bold">
+          <i className="bi bi-calendar-check-fill me-2 text-primary"></i> 
+          Reservaciones
+        </h3>
+      </Col>
+      <Col xs={4} className="text-end">
+        {/* Eliminamos el botón de cambio de vista y dejamos solo el de Nueva Reservación */}
+        <Button 
+          onClick={() => setMostrarModal(true)} 
+          className="color-navbar border-0 shadow-sm"
+        >
+          <i className="bi bi-plus-lg me-1"></i>
+          <span className="d-none d-sm-inline">Nueva Reservación</span>
+        </Button>
+      </Col>
+    </Row>
 
-      <hr />
+    <hr />
 
-      <Row className="mb-4">
-        <Col md={6}>
-          <CuadroBusquedas
-            textoBusqueda={textoBusqueda}
-            manejarCambioBusqueda={(e) => setTextoBusqueda(e.target.value)}
-            placeholder="Buscar por cliente o habitación..."
-          />
-        </Col>
-      </Row>
+    <Row className="mb-4">
+      <Col md={6} lg={5}>
+        <CuadroBusquedas
+          textoBusqueda={textoBusqueda}
+          manejarCambioBusqueda={(e) => setTextoBusqueda(e.target.value)}
+          placeholder="Buscar por cliente o habitación..."
+        />
+      </Col>
+    </Row>
 
-      {cargando ? (
-        <div className="text-center my-5">
-          <Spinner animation="border" variant="primary" />
-        </div>
-      ) : (
-        vistaTarjetas ? (
+    {cargando ? (
+      <div className="text-center my-5 py-5">
+        <Spinner animation="border" variant="primary" />
+        <p className="mt-2 text-muted">Cargando...</p>
+      </div>
+    ) : (
+      <Row>
+        {/* --- VISTA MÓVIL (TARJETAS) --- */}
+        {/* Se muestra en pantallas pequeñas (xs, sm, md) y se oculta en grandes (lg) */}
+        <Col xs={12} className="d-lg-none">
           <TarjetaReservaciones
             reservaciones={reservacionesFiltradas}
             abrirModalEdicion={abrirModalEdicion}
             abrirModalEliminacion={abrirModalEliminacion}
           />
-        ) : (
-          <TablaReservaciones
-            reservaciones={reservacionesFiltradas}
-            abrirModalEdicion={abrirModalEdicion}
-            abrirModalEliminacion={abrirModalEliminacion}
-          />
-        )
-      )}
+        </Col>
 
-      <ModalRegistroReservaciones
-        mostrarModal={mostrarModal}
-        setMostrarModal={setMostrarModal}
-        nuevaReservacion={nuevaReservacion}
-        setNuevaReservacion={setNuevaReservacion}
-        agregarReservacion={agregarReservacion}
-        clientes={clientes}
-        habitaciones={habitaciones}
+        {/* --- VISTA PC (TABLA) --- */}
+        {/* Se oculta por defecto y se muestra solo desde pantallas grandes (lg) */}
+        <Col lg={12} className="d-none d-lg-block">
+          <div className="bg-white rounded shadow-sm border">
+            <TablaReservaciones
+              reservaciones={reservacionesFiltradas}
+              abrirModalEdicion={abrirModalEdicion}
+              abrirModalEliminacion={abrirModalEliminacion}
+            />
+          </div>
+        </Col>
+      </Row>
+    )}
+
+    {/* --- MODALES --- */}
+    <ModalRegistroReservaciones
+      mostrarModal={mostrarModal}
+      setMostrarModal={setMostrarModal}
+      nuevaReservacion={nuevaReservacion}
+      setNuevaReservacion={setNuevaReservacion}
+      agregarReservacion={agregarReservacion}
+      clientes={clientes}
+      habitaciones={habitaciones}
+    />
+
+    {reservacionEditar && (
+      <ModalEdicionReservaciones
+        mostrarModalEdicion={mostrarModalEdicion}
+        setMostrarModalEdicion={setMostrarModalEdicion}
+        reservacionEditar={reservacionEditar}
+        setReservacionEditar={setReservacionEditar}
+        actualizarReservacion={actualizarReservacion}
       />
+    )}
 
-      {reservacionEditar && (
-        <ModalEdicionReservaciones
-          mostrarModalEdicion={mostrarModalEdicion}
-          setMostrarModalEdicion={setMostrarModalEdicion}
-          reservacionEditar={reservacionEditar}
-          setReservacionEditar={setReservacionEditar}
-          actualizarReservacion={actualizarReservacion}
-        />
-      )}
+    <ModalEliminarReservaciones
+      mostrarModalEliminacion={mostrarModalEliminacion}
+      setMostrarModalEliminacion={setMostrarModalEliminacion}
+      reservacionEliminar={reservacionAEliminar}
+      eliminarReservacion={eliminarReservacion}
+    />
 
-      <ModalEliminarReservaciones
-        mostrarModalEliminacion={mostrarModalEliminacion}
-        setMostrarModalEliminacion={setMostrarModalEliminacion}
-        reservacionEliminar={reservacionAEliminar}
-        eliminarReservacion={eliminarReservacion}
-      />
-
-      <NotificacionOperacion
-        mostrar={toast.mostrar}
-        mensaje={toast.mensaje}
-        tipo={toast.tipo}
-        onCerrar={() => setToast({ ...toast, mostrar: false })}
-      />
-    </Container>
-  );
+    <NotificacionOperacion
+      mostrar={toast.mostrar}
+      mensaje={toast.mensaje}
+      tipo={toast.tipo}
+      onCerrar={() => setToast({ ...toast, mostrar: false })}
+    />
+  </Container>
+);
 };
 
 export default Reservaciones;

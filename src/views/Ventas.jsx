@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { Container, Row, Col, Card, Table, Spinner, Button } from "react-bootstrap";
+import { Container, Row, Col, Table, Button, Spinner, Card, Badge } from "react-bootstrap";
 import { supabase } from "../database/supabaseconfig";
 import NotificacionOperacion from "../components/NotificacionOperacion";
 import CuadroBusquedas from "../components/busquedas/CuadroBusquedas";
@@ -144,125 +144,162 @@ const Ventas = () => {
 
   useEffect(() => { cargarDatos(); }, []);
 
-  return (
-    <Container fluid className="mt-5 px-4">
-      <Row>
-        <Col lg={3}>
-          <FormularioVenta
-            nuevaVenta={nuevaVenta}
-            setNuevaVenta={setNuevaVenta}
-            agregarVenta={agregarVenta}
-            reservaciones={reservaciones}
-            empleados={empleados}
-          />
+return (
+  <Container fluid className="mt-5 px-4">
+    <Row>
+      {/* PANEL IZQUIERDO: FORMULARIO Y TOTAL */}
+      <Col lg={3}>
+        <FormularioVenta
+          nuevaVenta={nuevaVenta}
+          setNuevaVenta={setNuevaVenta}
+          agregarVenta={agregarVenta}
+          reservaciones={reservaciones}
+          empleados={empleados}
+        />
 
-          <Card className="border-0 shadow-sm mt-3">
-            <Card.Body className="d-flex justify-content-between align-items-center">
-              <span className="fw-bold text-muted">Total:</span>
-              <h4 className="fw-bold mb-0 text-primary">
-                C$ {ventasFiltradas.reduce((acc, v) => acc + parseFloat(v.monto || 0), 0).toFixed(2)}
-              </h4>
-            </Card.Body>
-          </Card>
-        </Col>
+        <Card className="border-0 shadow-sm mt-3" style={{ borderRadius: "12px" }}>
+          <Card.Body className="d-flex justify-content-between align-items-center">
+            <span className="fw-bold text-muted">Total General:</span>
+            <h4 className="fw-bold mb-0" style={{ color: "#0d6efd" }}>
+              C$ {ventasFiltradas.reduce((acc, v) => acc + parseFloat(v.monto || 0), 0).toLocaleString('en-US', { minimumFractionDigits: 2 })}
+            </h4>
+          </Card.Body>
+        </Card>
+      </Col>
 
-        <Col lg={9}>
-          {/* BUSCADOR */}
-          <Row className="mb-3">
-            <Col md={6}>
-              <CuadroBusquedas
-                textoBusqueda={textoBusqueda}
-                manejarCambioBusqueda={manejarBusqueda}
-              />
-            </Col>
-          </Row>
+      {/* PANEL DERECHO: BUSCADOR Y TABLA */}
+      <Col lg={9}>
+        <Row className="mb-3">
+          <Col md={6}>
+            <CuadroBusquedas
+              textoBusqueda={textoBusqueda}
+              manejarCambioBusqueda={manejarBusqueda}
+            />
+          </Col>
+        </Row>
 
-          <div className="bg-white p-3 rounded shadow-sm border">
-            <Table hover className="align-middle mb-0">
-              <thead className="table-light">
-                <tr className="small text-uppercase text-muted">
-                  <th>ID</th>
-                  <th>CLIENTE</th>
-                  <th>HAB</th>
-                  <th>EMPLEADO</th>
-                  <th>TURNO</th>
-                  <th>MONTO</th>
-                  <th>FECHA</th>
-                  <th className="text-center">ACCIONES</th>
+        <div className="bg-white p-0 rounded shadow-sm border overflow-hidden" style={{ borderRadius: "12px" }}>
+          <Table hover responsive className="align-middle mb-0">
+            <thead className="table-light">
+              <tr className="small text-uppercase text-muted" style={{ fontSize: "0.75rem" }}>
+                <th className="ps-3">ID</th>
+                <th>CLIENTE</th>
+                <th className="text-center">HAB</th>
+                <th>EMPLEADO</th>
+                <th>TURNO</th>
+                <th>MONTO</th>
+                <th>FECHA</th>
+                <th className="text-center">ACCIONES</th>
+              </tr>
+            </thead>
+
+            <tbody className="small">
+              {cargando ? (
+                <tr>
+                  <td colSpan="8" className="text-center py-5">
+                    <Spinner animation="border" variant="primary" size="sm" className="me-2" />
+                    <span className="text-muted">Cargando registros...</span>
+                  </td>
                 </tr>
-              </thead>
+              ) : ventasFiltradas.length === 0 ? (
+                <tr>
+                  <td colSpan="8" className="text-center py-5 text-muted">
+                    No se encontraron ventas registradas.
+                  </td>
+                </tr>
+              ) : (
+                ventasFiltradas.map((v, index) => (
+                  <tr key={v.id_venta || index}>
+                    {/* 1. ID ASCENDENTE (Basado en el índice) */}
+                    <td className="ps-3 fw-bold text-muted">{index + 1}</td>
 
-              <tbody className="small">
-                {cargando ? (
-                  <tr>
-                    <td colSpan="8" className="text-center py-4">
-                      <Spinner animation="border" size="sm" />
+                    {/* 2. CLIENTE (Validación de relación) */}
+                    <td className="fw-semibold">
+                      {v.reservaciones?.clientes?.nombre || v.cliente_nombre || "N/A"}
+                    </td>
+
+                    {/* 3. HABITACIÓN */}
+                    <td className="text-center">
+                      <Badge bg="light" text="dark" className="border">
+                        {v.reservaciones?.habitaciones?.numero || v.habitacion_numero || "—"}
+                      </Badge>
+                    </td>
+
+                    {/* 4. EMPLEADO */}
+                    <td>{v.empleados?.nombre || "No asignado"}</td>
+
+                    {/* 5. TURNO (Lógica simplificada) */}
+                    <td>
+                      <span className={`badge ${v.empleados?.tipo_turno === "dia" ? "bg-info-subtle text-info" : "bg-dark-subtle text-dark"}`}>
+                        {v.empleados?.tipo_turno === "dia" ? "Dia" : "Noche"}
+                      </span>
+                    </td>
+
+                    {/* 6. MONTO */}
+                    <td className="fw-bold text-success">
+                      C$ {parseFloat(v.monto || 0).toFixed(2)}
+                    </td>
+
+                    {/* 7. FECHA */}
+                    <td className="text-muted">
+                      {v.fecha ? new Date(v.fecha).toLocaleDateString() : "S/F"}
+                    </td>
+
+                    {/* 8. ACCIONES */}
+                    <td className="text-center">
+                      <Button
+                        variant="link"
+                        className="text-warning p-1 me-2"
+                        onClick={() => {
+                          setVentaSeleccionada(v);
+                          setShowEditar(true);
+                        }}
+                      >
+                        <i className="bi bi-pencil-square fs-5"></i>
+                      </Button>
+
+                      <Button
+                        variant="link"
+                        className="text-danger p-1"
+                        onClick={() => {
+                          setVentaSeleccionada(v);
+                          setShowEliminar(true);
+                        }}
+                      >
+                        <i className="bi bi-trash3 fs-5"></i>
+                      </Button>
                     </td>
                   </tr>
-                ) : (
-                  ventasFiltradas.map((v) => (
-                    <tr key={v.id_venta}>
-                      <td>{v.id_venta.substring(0, 5)}</td>
-                      <td>{v.reservaciones?.clientes?.nombre}</td>
-                      <td>{v.reservaciones?.habitaciones?.numero}</td>
-                      <td>{v.empleados?.nombre}</td>
-                      <td>{v.empleados?.tipo_turno === "dia" ? "Día" : "Noche"}</td>
-                      <td className="fw-bold">C$ {parseFloat(v.monto).toFixed(2)}</td>
-                      <td>{new Date(v.fecha).toLocaleDateString()}</td>
-                      <td className="text-center">
-                        <Button
-                          variant="outline-warning"
-                          size="sm"
-                          className="me-2"
-                          onClick={() => {
-                            setVentaSeleccionada(v);
-                            setShowEditar(true);
-                          }}
-                        >
-                          <i className="bi bi-pencil"></i>
-                        </Button>
+                ))
+              )}
+            </tbody>
+          </Table>
+        </div>
+      </Col>
+    </Row>
 
-                        <Button
-                          variant="outline-danger"
-                          size="sm"
-                          onClick={() => {
-                            setVentaSeleccionada(v);
-                            setShowEliminar(true);
-                          }}
-                        >
-                          <i className="bi bi-trash"></i>
-                        </Button>
-                      </td>
-                    </tr>
-                  ))
-                )}
-              </tbody>
-            </Table>
-          </div>
-        </Col>
-      </Row>
+    {/* MODALES Y NOTIFICACIONES */}
+    <ModalEdicionVenta
+      show={showEditar}
+      onHide={() => setShowEditar(false)}
+      ventaSeleccionada={ventaSeleccionada}
+      setVentaSeleccionada={setVentaSeleccionada}
+      actualizarVenta={actualizarVenta}
+    />
 
-      <ModalEdicionVenta
-        show={showEditar}
-        onHide={() => setShowEditar(false)}
-        ventaSeleccionada={ventaSeleccionada}
-        setVentaSeleccionada={setVentaSeleccionada}
-        actualizarVenta={actualizarVenta}
-      />
+    <ModalEliminarVenta
+      show={showEliminar}
+      onHide={() => setShowEliminar(false)}
+      ventaSeleccionada={ventaSeleccionada}
+      eliminarVenta={eliminarVenta}
+    />
 
-      <ModalEliminarVenta
-        show={showEliminar}
-        onHide={() => setShowEliminar(false)}
-        ventaSeleccionada={ventaSeleccionada}
-        eliminarVenta={eliminarVenta}
-      />
-
-      <NotificacionOperacion
-        {...toast}
-        onCerrar={() => setToast({ ...toast, mostrar: false })}
-      />
-    </Container>
-  );
+    <NotificacionOperacion
+      {...toast}
+      onCerrar={() => setToast({ ...toast, mostrar: false })}
+    />
+  </Container>
+);
 };
 
 export default Ventas;
