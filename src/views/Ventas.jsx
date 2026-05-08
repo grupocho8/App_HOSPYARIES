@@ -3,11 +3,10 @@ import { Container, Row, Col, Table, Button, Spinner, Card, Badge } from "react-
 import { supabase } from "../database/supabaseconfig";
 import NotificacionOperacion from "../components/NotificacionOperacion";
 import CuadroBusquedas from "../components/busquedas/CuadroBusquedas";
-
-// COMPONENTES
 import FormularioVenta from "../components/ventas/FormularioVenta";
 import ModalEdicionVenta from "../components/ventas/ModalEdicionVenta";
 import ModalEliminarVenta from "../components/ventas/ModalEliminarVenta";
+import ChatIA from "../components/chat/ChatIA"; // <--- IMPORTACIÓN DE IA
 
 const Ventas = () => {
   const [ventas, setVentas] = useState([]);
@@ -21,6 +20,9 @@ const Ventas = () => {
   const [showEditar, setShowEditar] = useState(false);
   const [showEliminar, setShowEliminar] = useState(false);
   const [ventaSeleccionada, setVentaSeleccionada] = useState(null);
+
+  // ESTADO PARA IA: Controla la visibilidad del chat
+  const [mostrarChatModal, setMostrarChatModal] = useState(false);
 
   const [nuevaVenta, setNuevaVenta] = useState({ 
     id_reservacion: "", 
@@ -160,11 +162,20 @@ return (
         <Card className="border-0 shadow-sm mt-3" style={{ borderRadius: "12px" }}>
           <Card.Body className="d-flex justify-content-between align-items-center">
             <span className="fw-bold text-muted">Total General:</span>
-            <h4 className="fw-bold mb-0" style={{ color: "#0d6efd" }}>
+            <h4 className="fw-bold mb-0" style={{ color: "#1a9a69" }}>
               C$ {ventasFiltradas.reduce((acc, v) => acc + parseFloat(v.monto || 0), 0).toLocaleString('en-US', { minimumFractionDigits: 2 })}
             </h4>
           </Card.Body>
         </Card>
+
+        {/* BOTÓN DE IA: Estilo personalizado para el hotel */}
+          <Button 
+            className="w-100 mt-3 border-0" 
+            style={{ backgroundColor: '#2c6c62', padding: '10px' }}
+            onClick={() => setMostrarChatModal(true)}
+          >
+            <i className="bi bi-robot me-2"></i> Consultar con IA
+          </Button>
       </Col>
 
       {/* PANEL DERECHO: BUSCADOR Y TABLA */}
@@ -298,6 +309,12 @@ return (
       {...toast}
       onCerrar={() => setToast({ ...toast, mostrar: false })}
     />
+
+    {/* COMPONENTE DE IA: El modal del chat */}
+      <ChatIA 
+        mostrarChatModal={mostrarChatModal} 
+        setMostrarChatModal={setMostrarChatModal} 
+      />
   </Container>
 );
 };
