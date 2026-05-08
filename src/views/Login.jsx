@@ -41,16 +41,16 @@ const Login = () => {
     }
   }, [navegar]);
 
-  const estiloContenedor = {
+const estiloContenedor = {
     position: "fixed",
     top: 0,
     left: 0,
     width: "100%",
-    height: "108%",
+    height: "100%",
     display: "flex",
     justifyContent: "center",
     alignItems: "center",
-    background: "linear-gradient(135deg, #FFDEE9, #B5FFFC)",
+    background: "linear-gradient(135deg, #2F8F84 0%, #9FC9C3 100%)",
     overflow: "hidden",
     padding: "20px",
   }
