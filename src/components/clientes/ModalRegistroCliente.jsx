@@ -10,10 +10,14 @@ const ModalRegistroCliente = ({
 }) => {
   const [deshabilitado, setDeshabilitado] = useState(false);
 
-  // Expresión regular para cédula nicaragüense: 000-000000-0000A
+  // Expresión regular para solo letras (Nombre/Apellido)
+  const regexSoloLetras = /^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]+$/;
+  // Expresión regular para cédula nicaragüense
   const regexCedula = /^\d{3}-\d{6}-\d{4}[A-Z]$/;
 
-  // Validamos si la cédula es válida para mostrar error visual y bloquear botón
+  // Validaciones constantes
+  const esNombreValido = regexSoloLetras.test(nuevoCliente.nombre);
+  const esApellidoValido = regexSoloLetras.test(nuevoCliente.apellido);
   const esCedulaValida = regexCedula.test(nuevoCliente.cedula);
 
   const handleRegistrar = async () => {
@@ -44,7 +48,11 @@ const ModalRegistroCliente = ({
               value={nuevoCliente.nombre}
               onChange={manejoCambioInput}
               placeholder="Ingresa el nombre"
+              isInvalid={nuevoCliente.nombre !== "" && !esNombreValido}
             />
+            <Form.Control.Feedback type="invalid">
+              El nombre no puede contener números ni símbolos.
+            </Form.Control.Feedback>
           </Form.Group>
 
           <Form.Group className="mb-3">
@@ -55,7 +63,11 @@ const ModalRegistroCliente = ({
               value={nuevoCliente.apellido}
               onChange={manejoCambioInput}
               placeholder="Ingresa el apellido"
+              isInvalid={nuevoCliente.apellido !== "" && !esApellidoValido}
             />
+            <Form.Control.Feedback type="invalid">
+              El apellido no puede contener números ni símbolos.
+            </Form.Control.Feedback>
           </Form.Group>
 
           <Form.Group className="mb-3">
@@ -81,14 +93,14 @@ const ModalRegistroCliente = ({
         <Button
           variant="primary"
           onClick={handleRegistrar}
-          // El botón se bloquea si el nombre está vacío o la cédula no es válida
           disabled={
-            nuevoCliente.nombre.trim() === "" || 
+            !esNombreValido || 
+            !esApellidoValido ||
             !esCedulaValida || 
             deshabilitado
           }
           className="color-navbar border-0"
-          style={{ backgroundColor: "#0F5C4F" }} // Usando el color de tu paleta
+          style={{ backgroundColor: "#0F5C4F" }}
         >
           Guardar
         </Button>

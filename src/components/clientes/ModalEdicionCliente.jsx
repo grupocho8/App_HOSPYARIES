@@ -12,8 +12,12 @@ const ModalEdicionCliente = ({
 }) => {
   const [deshabilitado, setDeshabilitado] = useState(false);
 
-  // ✅ MISMA VALIDACIÓN DE CÉDULA
+  // Expresiones regulares
+  const regexSoloLetras = /^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]+$/;
   const regexCedula = /^\d{3}-\d{6}-\d{4}[A-Z]$/;
+
+  const esNombreValido = regexSoloLetras.test(clienteAEditar?.nombre || "");
+  const esApellidoValido = regexSoloLetras.test(clienteAEditar?.apellido || "");
   const esCedulaValida = regexCedula.test(clienteAEditar?.cedula || "");
 
   const manejoCambioInputEdicion = (e) => {
@@ -26,16 +30,10 @@ const ModalEdicionCliente = ({
 
   const handleActualizar = async () => {
     if (deshabilitado) return;
-
     setDeshabilitado(true);
 
     try {
-      // ✅ VALIDACIÓN COMPLETA (igual que registro)
-      if (
-        !clienteAEditar.nombre.trim() ||
-        !clienteAEditar.apellido.trim() ||
-        !esCedulaValida
-      ) {
+      if (!esNombreValido || !esApellidoValido || !esCedulaValida) {
         setToast({
           mostrar: true,
           mensaje: "Debe completar todos los campos correctamente.",
@@ -99,7 +97,11 @@ const ModalEdicionCliente = ({
               name="nombre"
               value={clienteAEditar.nombre}
               onChange={manejoCambioInputEdicion}
+              isInvalid={!esNombreValido}
             />
+            <Form.Control.Feedback type="invalid">
+              El nombre no puede contener números ni símbolos.
+            </Form.Control.Feedback>
           </Form.Group>
 
           <Form.Group className="mb-3">
@@ -109,7 +111,11 @@ const ModalEdicionCliente = ({
               name="apellido"
               value={clienteAEditar.apellido}
               onChange={manejoCambioInputEdicion}
+              isInvalid={!esApellidoValido}
             />
+            <Form.Control.Feedback type="invalid">
+              El apellido no puede contener números ni símbolos.
+            </Form.Control.Feedback>
           </Form.Group>
 
           <Form.Group className="mb-3">
@@ -119,10 +125,7 @@ const ModalEdicionCliente = ({
               name="cedula"
               value={clienteAEditar.cedula}
               onChange={manejoCambioInputEdicion}
-              placeholder="001-000000-0000A"
-              isInvalid={
-                clienteAEditar.cedula !== "" && !esCedulaValida
-              }
+              isInvalid={clienteAEditar.cedula !== "" && !esCedulaValida}
             />
             <Form.Control.Feedback type="invalid">
               Formato de cédula incorrecto (000-000000-0000A).
@@ -132,10 +135,7 @@ const ModalEdicionCliente = ({
       </Modal.Body>
 
       <Modal.Footer>
-        <Button
-          variant="secondary"
-          onClick={() => setMostrarModalEdicion(false)}
-        >
+        <Button variant="secondary" onClick={() => setMostrarModalEdicion(false)}>
           Cancelar
         </Button>
 
@@ -143,8 +143,8 @@ const ModalEdicionCliente = ({
           variant="primary"
           onClick={handleActualizar}
           disabled={
-            clienteAEditar.nombre.trim() === "" ||
-            clienteAEditar.apellido.trim() === "" ||
+            !esNombreValido ||
+            !esApellidoValido ||
             !esCedulaValida ||
             deshabilitado
           }
