@@ -1,114 +1,103 @@
 import React, { useEffect, useState, useMemo } from "react";
-import { Row, Col, Spinner, Alert, Form } from "react-bootstrap";
+import { Row, Col, Spinner, Alert, Form, Container } from "react-bootstrap";
 import { supabase } from "../database/supabaseconfig";
-import CuadroBusquedas from "../components/busquedas/CuadroBusquedas";
 import TarjetaCatalogo from "../components/catalogo/TarjetaCatalogo";
+import CuadroBusquedas from "../components/busquedas/CuadroBusquedas";
 
 const Catalogo = () => {
-  // ==================== ESTADOS ====================
   const [habitaciones, setHabitaciones] = useState([]);
   const [textoBusqueda, setTextoBusqueda] = useState("");
   const [filtroEstado, setFiltroEstado] = useState("todos");
   const [cargando, setCargando] = useState(true);
 
-  // ==================== CARGA DE DATOS ====================
-  const cargarHabitaciones = async () => {
+  const cargarDatos = async () => {
     try {
       setCargando(true);
-      // Intentamos traer todo de la tabla habitaciones
       const { data, error } = await supabase
         .from("habitaciones")
-        .select("*"); // Quitamos el .order por ahora para evitar errores de columna
+        .select("*")
+        .order("numero", { ascending: true }); // Ordenar por número de habitación
 
       if (error) throw error;
       setHabitaciones(data || []);
     } catch (err) {
-      console.error("Error al cargar habitaciones:", err.message);
+      console.error("Error al cargar habitaciones:", err);
     } finally {
       setCargando(false);
     }
   };
 
-  // ==================== FILTRADO ====================
+  useEffect(() => {
+    cargarDatos();
+  }, []);
+
   const habitacionesFiltradas = useMemo(() => {
     let filtradas = habitaciones;
 
-    // Filtro por estado (Disponible, Ocupada, Reservada)
+    // Filtro por Estado (visto en Supabase como 'disponible', 'ocupada', etc.)
     if (filtroEstado !== "todos") {
-      filtradas = filtradas.filter((hab) => hab.estado === filtroEstado);
+      filtradas = filtradas.filter((h) => h.estado.toLowerCase() === filtroEstado.toLowerCase());
     }
 
-    // Filtro por texto (Número o Tipo de habitación)
+    // Filtro por búsqueda de texto
     if (textoBusqueda.trim()) {
       const textoLower = textoBusqueda.toLowerCase().trim();
-      filtradas = filtradas.filter((hab) => {
-        const numero = hab.numero_habitacion?.toString() || "";
-        const tipo = hab.tipo_habitacion?.toLowerCase() || "";
-        return numero.includes(textoLower) || tipo.includes(textoLower);
-      });
+      filtradas = filtradas.filter((h) => 
+        h.numero?.toString().includes(textoLower) || 
+        h.tipo?.toLowerCase().includes(textoLower)
+      );
     }
 
     return filtradas;
   }, [habitaciones, filtroEstado, textoBusqueda]);
 
-  useEffect(() => {
-    cargarHabitaciones();
-  }, []);
-
   return (
-    <div className="mt-3 px-3">
-      <Row className="align-items-center mb-4">
-        <Col xs={12} md={4}>
-          <h3 className="mb-0">
-            <i className="bi-door-open-fill me-2"></i>Catálogo de Habitaciones
-          </h3>
-          <p className="text-muted small">Consulta disponibilidad y tipos</p>
-        </Col>
-
-        <Col xs={12} md={4} className="mt-2 mt-md-0">
-          <Form.Select
+    <Container className="mt-4">
+      <div className="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-3">
+        <div>
+          <h2 className="fw-bold mb-0">Catálogo de Habitaciones</h2>
+          <p className="text-muted">Gestiona y consulta disponibilidad en tiempo real</p>
+        </div>
+        
+        <div className="d-flex gap-2 flex-wrap">
+          {/* Filtro por Estado */}
+          <Form.Select 
+            style={{ width: '200px' }}
             value={filtroEstado}
             onChange={(e) => setFiltroEstado(e.target.value)}
-            className="shadow-sm border-0 bg-light"
+            className="shadow-sm border-0"
           >
             <option value="todos">Todos los estados</option>
-            <option value="DISPONIBLE">Disponibles</option>
-            <option value="OCUPADA">Ocupadas</option>
-            <option value="RESERVADA">Reservadas</option>
+            <option value="disponible">Disponibles</option>
+            <option value="ocupada">Ocupadas</option>
+            <option value="reservada">Reservadas</option>
           </Form.Select>
-        </Col>
 
-        <Col xs={12} md={4} className="mt-2 mt-md-0">
-          <CuadroBusquedas
-            textoBusqueda={textoBusqueda}
-            manejarCambioBusqueda={(e) => setTextoBusqueda(e.target.value)}
+          <CuadroBusquedas 
+            textoBusqueda={textoBusqueda} 
+            manejarCambioBusqueda={(e) => setTextoBusqueda(e.target.value)} 
           />
-        </Col>
-      </Row>
+        </div>
+      </div>
 
-      <hr />
-
-      {/* Cambiamos el Row de los productos */}
-      {!cargando && habitacionesFiltradas.length > 0 && (
-        <Row className="flex-column"> {/* Forzamos dirección de columna */}
+      {cargando ? (
+        <div className="text-center my-5">
+          <Spinner animation="border" variant="primary" />
+        </div>
+      ) : habitacionesFiltradas.length === 0 ? (
+        <Alert variant="info" className="text-center shadow-sm">
+          No se encontraron habitaciones con estos filtros.
+        </Alert>
+      ) : (
+        <Row className="g-4">
           {habitacionesFiltradas.map((hab) => (
-            <Col xs={12} key={hab.id_habitacion} className="px-0">
-              <TarjetaCatalogo
-                producto={{
-                  id_producto: hab.id_habitacion,
-                  // Usamos hab.numero si numero_habitacion viene vacío
-                  nombre_producto: `Habitaciones: ${hab.numero || hab.numero_habitacion || 'S/N'}`,
-                  descripcion_producto: hab.tipo_habitacion,
-                  precio_venta: hab.precio,
-                  url_imagen: hab.url_imagen
-                }}
-                categoriaNombre={hab.estado}
-              />
+            <Col xs={12} key={hab.id_habitacion}>
+              <TarjetaCatalogo habitación={hab} />
             </Col>
           ))}
         </Row>
       )}
-    </div>
+    </Container>
   );
 };
 

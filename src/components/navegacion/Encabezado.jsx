@@ -89,7 +89,7 @@ const Encabezado = () => {
               onClick={() => manejarNavegacion("/empleados")}
               className={mostrarMenu ? "color-texto-marca" : "text-dark"}
             >
-              {mostrarMenu ? <i className="bi-images me-2"></i> : null}
+             {mostrarMenu ? <i className="bi-person-badge-fill me-2"></i> : null}
               <strong>Empleados</strong>
             </Nav.Link>
            
@@ -97,7 +97,7 @@ const Encabezado = () => {
               onClick={() => manejarNavegacion("/controlventas")}
               className={mostrarMenu ? "color-texto-marca" : "text-dark"}
             >
-              {mostrarMenu ? <i className="bi-clock-history me-2"></i> : null}
+              {mostrarMenu ? <i className="bi-cash-stack me-2"></i> : null}
               <strong>Ventas</strong>
             </Nav.Link>
 

@@ -1,119 +1,91 @@
-import React from "react";
-import { Card, Badge, Row, Col, Button } from "react-bootstrap";
+import React, { useState } from "react";
+import { Card, Badge, Row, Col } from "react-bootstrap";
 
-const TarjetaCatalogo = ({ producto, categoriaNombre }) => {
-  
-  const getEstadoColor = (estado) => {
-    switch (estado?.toUpperCase()) {
-      case 'DISPONIBLE': return '#d1e7dd'; // Verde clarito
-      case 'OCUPADA': return '#f8d7da';    // Rojo clarito
-      case 'RESERVADA': return '#15ff00';  // Amarillo clarito
-      default: return '#e2e3e5';
-    }
-  };
+const TarjetaCatalogo = ({ habitación }) => {
+  const [hover, setHover] = useState(false);
 
-  const getTextoColor = (estado) => {
-    switch (estado?.toUpperCase()) {
-      case 'DISPONIBLE': return '#00ff40';
-      case 'OCUPADA': return '#d9ff00';
-      case 'RESERVADA': return '#00ff15';
-      default: return '#41464b';
-    }
+  // Colores para los estados
+  const colorEstado = {
+    disponible: "success",
+    ocupada: "danger",
+    reservada: "warning",
   };
 
   return (
-    <Card className="mb-3 border-0 shadow-sm" style={{ borderRadius: "12px", backgroundColor: "#fff" }}>
-      <Card.Body className="p-3">
-        <Row className="align-items-center">
-          {/* Imagen estilo Figma: Cuadrada y con bordes redondeados */}
-          <Col xs={12} md={3} lg={2} className="mb-3 mb-md-0">
-            <div style={{ 
-              width: "100%", 
-              aspectRatio: "1/1", 
-              overflow: "hidden", 
-              borderRadius: "12px" 
-            }}>
-              {producto.url_imagen ? (
-                <img
-                  src={producto.url_imagen}
-                  alt={producto.nombre_producto}
-                  className="w-100 h-100 object-fit-cover"
-                />
-              ) : (
-                <div className="bg-light d-flex align-items-center justify-content-center h-100">
-                  <i className="bi bi-image text-muted fs-2"></i>
-                </div>
-              )}
-            </div>
-          </Col>
+    <Card
+      className={`border-0 shadow-sm overflow-hidden transition-all ${hover ? "shadow-lg" : ""}`}
+      style={{
+        borderRadius: "15px",
+        transition: "all 0.3s ease",
+        transform: hover ? "translateY(-5px)" : "none",
+      }}
+      onMouseEnter={() => setHover(true)}
+      onMouseLeave={() => setHover(false)}
+    >
+      <Row className="g-0 align-items-center">
+        {/* Lado de la Imagen: 4 columnas en desktop, full en móvil */}
+        <Col md={4}>
+          <div
+            style={{
+              height: "220px",
+              overflow: "hidden",
+              position: "relative",
+            }}
+          >
+            <img
+              src={
+                habitación.url_imagen ||
+                "https://via.placeholder.com/400x300?text=Sin+Imagen"
+              }
+              alt={`Habitación ${habitación.numero}`}
+              className="w-100 h-100 object-fit-cover"
+              style={{ transition: "transform 0.5s ease" }}
+            />
+            <Badge
+              bg={colorEstado[habitación.estado?.toLowerCase()] || "secondary"}
+              className="position-absolute top-0 start-0 m-3 shadow-sm text-uppercase"
+              style={{ padding: "8px 12px" }}
+            >
+              {habitación.estado}
+            </Badge>
+          </div>
+        </Col>
 
-          {/* Información Principal */}
-          <Col xs={12} md={6} lg={7}>
-            <div className="ps-md-2">
-              <h4 className="fw-bold mb-1" style={{ color: "#333", fontSize: "1.4rem" }}>
-                {producto.descripcion_producto} {/* Ej: UniPersonal */}
-              </h4>
-              <p className="text-muted mb-3" style={{ fontSize: "0.9rem" }}>
-                {producto.nombre_producto} {/* Ej: Habitaciones: 15 */}
-              </p>
-
-              <Row className="g-2 mt-2">
-                <Col xs={6} md={4}>
-                  <div className="text-muted small fw-bold text-uppercase" style={{ fontSize: "0.7rem" }}>Capacidad:</div>
-                  <div className="text-dark d-flex align-items-center">
-                    <i className="bi bi-person-fill me-1"></i>
-                    <span style={{ fontSize: "0.9rem" }}>
-                        {producto.descripcion_producto?.toLowerCase().includes('doble') ? '4 Adultos' : '1 Adulto'}
-                    </span>
-                  </div>
-                </Col>
-                <Col xs={12} md={8}>
-                  <div className="text-muted small fw-bold text-uppercase" style={{ fontSize: "0.7rem" }}>Amenidades a elección:</div>
-                  <div className="text-muted" style={{ fontSize: "0.85rem" }}>
-                    TV, AC, Ventilador, Amenities
-                  </div>
-                </Col>
-              </Row>
-
-              <div className="mt-3">
-                <Badge 
-                  style={{ 
-                    backgroundColor: getEstadoColor(categoriaNombre), 
-                    color: getTextoColor(categoriaNombre),
-                    fontSize: "0.75rem",
-                    fontWeight: "500",
-                    padding: "6px 12px",
-                    borderRadius: "20px",
-                    border: "none"
-                  }}
-                >
-                  {categoriaNombre?.toLowerCase()}
-                </Badge>
+        {/* Lado del Contenido: 8 columnas en desktop */}
+        <Col md={8}>
+          <Card.Body className="p-4">
+            <div className="d-flex justify-content-between align-items-start">
+              <div>
+                <h4 className="fw-bold mb-1 text-capitalize">
+                  {habitación.tipo}
+                </h4>
+                <p className="text-muted mb-3">
+                  Habitación No. {habitación.numero}
+                </p>
+              </div>
+              <div className="text-end">
+                <span className="text-success h4 fw-bold">
+                  C$ {habitación.precio}
+                </span>
               </div>
             </div>
-          </Col>
 
-          {/* Precio y Botón (Alineado a la derecha como Figma) */}
-          <Col xs={12} md={3} lg={3} className="text-md-end mt-3 mt-md-0 border-start ps-4">
-            <div className="mb-4">
-              <h4 className="fw-bold mb-0" style={{ color: "#222" }}>
-                C$ {parseFloat(producto.precio_venta).toFixed(0)}<span style={{ fontSize: "0.9rem", fontWeight: "normal" }}>/noche</span>
-              </h4>
+            <hr className="my-3 opacity-10" />
+
+            <div className="d-flex gap-3 text-muted small">
+              <span>
+                <i className="bi-tv"></i> Smart TV
+              </span>
+              <span>
+                <i className="bi bi-wifi me-1"></i> Wi-Fi
+              </span>
+              <span>
+                <i className="bi bi-wind me-1"></i> Ventilador
+              </span>
             </div>
-            <Button 
-              className="px-4 py-2 fw-bold" 
-              style={{ 
-                backgroundColor: "#0F5C4F", 
-                border: "none",
-                borderRadius: "8px",
-                fontSize: "0.9rem"
-              }}
-            >
-              Editar
-            </Button>
-          </Col>
-        </Row>
-      </Card.Body>
+          </Card.Body>
+        </Col>
+      </Row>
     </Card>
   );
 };
