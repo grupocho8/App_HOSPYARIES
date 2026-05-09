@@ -7,6 +7,8 @@ import FormularioVenta from "../components/ventas/FormularioVenta";
 import ModalEdicionVenta from "../components/ventas/ModalEdicionVenta";
 import ModalEliminarVenta from "../components/ventas/ModalEliminarVenta";
 import ChatIA from "../components/chat/ChatIA"; // <--- IMPORTACIÓN DE IA
+import jsPDF from "jspdf";
+import autoTable from "jspdf-autotable";
 
 const Ventas = () => {
   const [ventas, setVentas] = useState([]);
@@ -29,6 +31,57 @@ const Ventas = () => {
     id_empleado: "", 
     monto: "" 
   });
+
+  // FUNCIÓN PARA GENERAR EL PDF DE VENTAS
+  const generarPDFVentas = () => {
+    const doc = new jsPDF();
+
+    // Encabezado del PDF
+    doc.setFillColor(44, 108, 98); 
+    doc.rect(0, 0, 220, 30, 'F');
+    
+    doc.setTextColor(255, 255, 255);
+    doc.setFontSize(22);
+    doc.text("Reporte de Ventas - HospyAries", doc.internal.pageSize.getWidth() / 2, 18, { align: "center" });
+
+    // Definir columnas
+    const columnas = ["#", "Cliente", "Hab.", "Empleado", "Turno", "Monto", "Fecha"];
+    
+    // Mapear filas desde ventasFiltradas para que el PDF respete la búsqueda actual
+    const filas = ventasFiltradas.map((v, index) => [
+      index + 1,
+      v.reservaciones?.clientes?.nombre || "N/A",
+      v.reservaciones?.habitaciones?.numero || "—",
+      v.empleados?.nombre || "N/A",
+      v.empleados?.tipo_turno === "dia" ? "Día" : "Noche",
+      `C$ ${parseFloat(v.monto || 0).toFixed(2)}`,
+      v.fecha ? new Date(v.fecha).toLocaleDateString() : "S/F"
+    ]);
+
+    // Calcular total para el reporte
+    const totalVentas = ventasFiltradas.reduce((acc, v) => acc + parseFloat(v.monto || 0), 0);
+
+    autoTable(doc, {
+      head: [columnas],
+      body: filas,
+      startY: 40,
+      theme: "grid",
+      headStyles: { fillColor: [44, 108, 98] }, 
+      styles: { fontSize: 9 },
+      didDrawPage: (data) => {
+        // Pie de página con total y número de página
+        const str = "Página " + doc.internal.getNumberOfPages();
+        doc.setFontSize(10);
+        doc.setTextColor(40);
+        doc.text(str, data.settings.margin.left, doc.internal.pageSize.getHeight() - 10);
+        doc.text(`Total Reportado: C$ ${totalVentas.toFixed(2)}`, 140, doc.internal.pageSize.getHeight() - 10);
+      }
+    });
+
+    // Nombre del archivo con fecha
+    const fecha = new Date().toISOString().split('T')[0];
+    doc.save(`Reporte_Ventas_${fecha}.pdf`);
+  };
 
   // ==================== BÚSQUEDA ====================
   const manejarBusqueda = (e) => {
@@ -167,6 +220,16 @@ return (
             </h4>
           </Card.Body>
         </Card>
+
+        {/* BOTÓN PARA GENERAR PDF */}
+          <Button 
+            variant="outline-danger" 
+            className="w-100 mt-3 shadow-sm" 
+            style={{ padding: '10px' }}
+            onClick={generarPDFVentas}
+          >
+            <i className="bi bi-file-earmark-pdf me-2"></i> Descargar Reporte PDF
+          </Button>
 
         {/* BOTÓN DE IA: Estilo personalizado para el hotel */}
           <Button 
