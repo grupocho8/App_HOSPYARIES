@@ -48,15 +48,22 @@ const Reservaciones = () => {
     setHabitaciones(resHabitaciones.data || []);
   };
 
-  const cargarReservaciones = async () => {
+const cargarReservaciones = async () => {
     try {
       setCargando(true);
       const { data, error } = await supabase
         .from("reservaciones")
         .select(`
           *,
-          clientes (nombre),
-          habitaciones (numero)
+          clientes (
+            nombre,
+            apellido,
+            cedula
+          ),
+          habitaciones (
+            numero,
+            tipo
+          )
         `)
         .order("fecha_creacion", { ascending: false });
 
@@ -83,10 +90,18 @@ const Reservaciones = () => {
     } else {
       const texto = textoBusqueda.toLowerCase();
 
-      const filtrados = reservaciones.filter(res =>
-        res.clientes?.nombre?.toLowerCase().includes(texto) ||
-        res.habitaciones?.numero?.toString().toLowerCase().includes(texto)
-      );
+      const filtrados = reservaciones.filter(res => {
+        const cliente = res.clientes;
+        const habitacion = res.habitaciones;
+
+        return (
+          cliente?.nombre?.toLowerCase().includes(texto) ||
+          cliente?.apellido?.toLowerCase().includes(texto) || // Búsqueda por apellido
+          cliente?.cedula?.includes(texto) ||                // Búsqueda por cédula
+          habitacion?.numero?.toString().includes(texto) ||
+          habitacion?.tipo?.toLowerCase().includes(texto)    // Búsqueda por tipo de hab
+        );
+      });
 
       setReservacionesFiltradas(filtrados);
     }
@@ -166,106 +181,106 @@ const Reservaciones = () => {
     setMostrarModalEliminacion(true);
   };
 
- return (
-  <Container className="mt-5 pt-4">
-    <Row className="align-items-center mb-4">
-      <Col xs={8}>
-        <h3 className="fw-bold">
-          <i className="bi bi-calendar-check-fill me-2 text-primary"></i> 
-          Reservaciones
-        </h3>
-      </Col>
-      <Col xs={4} className="text-end">
-        {/* Eliminamos el botón de cambio de vista y dejamos solo el de Nueva Reservación */}
-        <Button 
-          onClick={() => setMostrarModal(true)} 
-          className="color-navbar border-0 shadow-sm"
-        >
-          <i className="bi bi-plus-lg me-1"></i>
-          <span className="d-none d-sm-inline">Nueva Reservación</span>
-        </Button>
-      </Col>
-    </Row>
+  return (
+    <Container className="mt-5 pt-4">
+      <Row className="align-items-center mb-4">
+        <Col xs={8}>
+          <h3 className="fw-bold">
+            <i className="bi bi-calendar-check-fill me-2 text-primary"></i>
+            Reservaciones
+          </h3>
+        </Col>
+        <Col xs={4} className="text-end">
+          {/* Eliminamos el botón de cambio de vista y dejamos solo el de Nueva Reservación */}
+          <Button
+            onClick={() => setMostrarModal(true)}
+            className="color-navbar border-0 shadow-sm"
+          >
+            <i className="bi bi-plus-lg me-1"></i>
+            <span className="d-none d-sm-inline">Nueva Reservación</span>
+          </Button>
+        </Col>
+      </Row>
 
-    <hr />
+      <hr />
 
-    <Row className="mb-4">
-      <Col md={6} lg={5}>
-        <CuadroBusquedas
-          textoBusqueda={textoBusqueda}
-          manejarCambioBusqueda={(e) => setTextoBusqueda(e.target.value)}
-          placeholder="Buscar por cliente o habitación..."
-        />
-      </Col>
-    </Row>
-
-    {cargando ? (
-      <div className="text-center my-5 py-5">
-        <Spinner animation="border" variant="primary" />
-        <p className="mt-2 text-muted">Cargando...</p>
-      </div>
-    ) : (
-      <Row>
-        {/* --- VISTA MÓVIL (TARJETAS) --- */}
-        {/* Se muestra en pantallas pequeñas (xs, sm, md) y se oculta en grandes (lg) */}
-        <Col xs={12} className="d-lg-none">
-          <TarjetaReservaciones
-            reservaciones={reservacionesFiltradas}
-            abrirModalEdicion={abrirModalEdicion}
-            abrirModalEliminacion={abrirModalEliminacion}
+      <Row className="mb-4">
+        <Col md={6} lg={5}>
+          <CuadroBusquedas
+            textoBusqueda={textoBusqueda}
+            manejarCambioBusqueda={(e) => setTextoBusqueda(e.target.value)}
+            placeholder="Buscar por cliente o habitación..."
           />
         </Col>
+      </Row>
 
-        {/* --- VISTA PC (TABLA) --- */}
-        {/* Se oculta por defecto y se muestra solo desde pantallas grandes (lg) */}
-        <Col lg={12} className="d-none d-lg-block">
-          <div className="bg-white rounded shadow-sm border">
-            <TablaReservaciones
+      {cargando ? (
+        <div className="text-center my-5 py-5">
+          <Spinner animation="border" variant="primary" />
+          <p className="mt-2 text-muted">Cargando...</p>
+        </div>
+      ) : (
+        <Row>
+          {/* --- VISTA MÓVIL (TARJETAS) --- */}
+          {/* Se muestra en pantallas pequeñas (xs, sm, md) y se oculta en grandes (lg) */}
+          <Col xs={12} className="d-lg-none">
+            <TarjetaReservaciones
               reservaciones={reservacionesFiltradas}
               abrirModalEdicion={abrirModalEdicion}
               abrirModalEliminacion={abrirModalEliminacion}
             />
-          </div>
-        </Col>
-      </Row>
-    )}
+          </Col>
 
-    {/* --- MODALES --- */}
-    <ModalRegistroReservaciones
-      mostrarModal={mostrarModal}
-      setMostrarModal={setMostrarModal}
-      nuevaReservacion={nuevaReservacion}
-      setNuevaReservacion={setNuevaReservacion}
-      agregarReservacion={agregarReservacion}
-      clientes={clientes}
-      habitaciones={habitaciones}
-    />
+          {/* --- VISTA PC (TABLA) --- */}
+          {/* Se oculta por defecto y se muestra solo desde pantallas grandes (lg) */}
+          <Col lg={12} className="d-none d-lg-block">
+            <div className="bg-white rounded shadow-sm border">
+              <TablaReservaciones
+                reservaciones={reservacionesFiltradas}
+                abrirModalEdicion={abrirModalEdicion}
+                abrirModalEliminacion={abrirModalEliminacion}
+              />
+            </div>
+          </Col>
+        </Row>
+      )}
 
-    {reservacionEditar && (
-      <ModalEdicionReservaciones
-        mostrarModalEdicion={mostrarModalEdicion}
-        setMostrarModalEdicion={setMostrarModalEdicion}
-        reservacionEditar={reservacionEditar}
-        setReservacionEditar={setReservacionEditar}
-        actualizarReservacion={actualizarReservacion}
+      {/* --- MODALES --- */}
+      <ModalRegistroReservaciones
+        mostrarModal={mostrarModal}
+        setMostrarModal={setMostrarModal}
+        nuevaReservacion={nuevaReservacion}
+        setNuevaReservacion={setNuevaReservacion}
+        agregarReservacion={agregarReservacion}
+        clientes={clientes}
+        habitaciones={habitaciones}
       />
-    )}
 
-    <ModalEliminarReservaciones
-      mostrarModalEliminacion={mostrarModalEliminacion}
-      setMostrarModalEliminacion={setMostrarModalEliminacion}
-      reservacionEliminar={reservacionAEliminar}
-      eliminarReservacion={eliminarReservacion}
-    />
+      {reservacionEditar && (
+        <ModalEdicionReservaciones
+          mostrarModalEdicion={mostrarModalEdicion}
+          setMostrarModalEdicion={setMostrarModalEdicion}
+          reservacionEditar={reservacionEditar}
+          setReservacionEditar={setReservacionEditar}
+          actualizarReservacion={actualizarReservacion}
+        />
+      )}
 
-    <NotificacionOperacion
-      mostrar={toast.mostrar}
-      mensaje={toast.mensaje}
-      tipo={toast.tipo}
-      onCerrar={() => setToast({ ...toast, mostrar: false })}
-    />
-  </Container>
-);
+      <ModalEliminarReservaciones
+        mostrarModalEliminacion={mostrarModalEliminacion}
+        setMostrarModalEliminacion={setMostrarModalEliminacion}
+        reservacionEliminar={reservacionAEliminar}
+        eliminarReservacion={eliminarReservacion}
+      />
+
+      <NotificacionOperacion
+        mostrar={toast.mostrar}
+        mensaje={toast.mensaje}
+        tipo={toast.tipo}
+        onCerrar={() => setToast({ ...toast, mostrar: false })}
+      />
+    </Container>
+  );
 };
 
 export default Reservaciones;

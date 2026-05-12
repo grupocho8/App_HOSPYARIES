@@ -39,7 +39,7 @@ const Ventas = () => {
 
   // ==================== PDF ====================
 
-  const generarPDFVentas = () => {
+const generarPDFVentas = () => {
     const doc = new jsPDF();
 
     doc.setFillColor(44, 108, 98);
@@ -67,7 +67,10 @@ const Ventas = () => {
 
     const filas = ventasFiltradas.map((v, index) => [
       index + 1,
-      v.reservaciones?.clientes?.nombre || "N/A",
+      // MODIFICACIÓN: Concatenamos nombre y apellido
+      v.reservaciones?.clientes 
+        ? `${v.reservaciones.clientes.nombre} ${v.reservaciones.clientes.apellido || ""}` 
+        : "N/A",
       v.reservaciones?.habitaciones?.numero || "—",
       v.empleados?.nombre || "N/A",
       v.empleados?.tipo_turno === "dia" ? "Día" : "Noche",
@@ -119,25 +122,21 @@ const Ventas = () => {
     setTextoBusqueda(e.target.value);
   };
 
-  useEffect(() => {
+useEffect(() => {
     if (!textoBusqueda.trim()) {
       setVentasFiltradas(ventas);
     } else {
       const texto = textoBusqueda.toLowerCase();
-
-      const filtradas = ventas.filter(
-        (v) =>
-          v.reservaciones?.clientes?.nombre
-            ?.toLowerCase()
-            .includes(texto) ||
-          v.reservaciones?.habitaciones?.numero
-            ?.toString()
-            .toLowerCase()
-            .includes(texto) ||
-          v.empleados?.nombre?.toLowerCase().includes(texto) ||
-          v.empleados?.tipo_turno?.toLowerCase().includes(texto)
-      );
-
+      const filtradas = ventas.filter((v) => {
+        const cliente = v.reservaciones?.clientes;
+        const nombreCompleto = `${cliente?.nombre} ${cliente?.apellido}`.toLowerCase();
+        
+        return (
+          nombreCompleto.includes(texto) || 
+          v.reservaciones?.habitaciones?.numero?.toString().includes(texto) ||
+          v.empleados?.nombre?.toLowerCase().includes(texto)
+        );
+      });
       setVentasFiltradas(filtradas);
     }
   }, [textoBusqueda, ventas]);
@@ -147,15 +146,7 @@ const Ventas = () => {
   const cargarDatos = async () => {
     try {
       setCargando(true);
-
-      const { data: resData } = await supabase
-        .from("reservaciones")
-        .select("id_reservacion, clientes(nombre), habitaciones(numero)");
-
-      const { data: empData } = await supabase
-        .from("empleados")
-        .select("id_empleado, nombre, tipo_turno");
-
+      // Traemos nombre y apellido de la relación de clientes
       const { data: ventasData } = await supabase
         .from("ventas")
         .select(`
@@ -163,7 +154,7 @@ const Ventas = () => {
           monto,
           fecha,
           reservaciones (
-            clientes (nombre),
+            clientes (nombre, apellido), 
             habitaciones (numero)
           ),
           empleados (
@@ -173,10 +164,15 @@ const Ventas = () => {
         `)
         .order("fecha", { ascending: false });
 
-      setReservaciones(resData || []);
-      setEmpleados(empData || []);
+      // También actualizamos la carga de reservaciones para el formulario
+      const { data: resData } = await supabase
+        .from("reservaciones")
+        .select("id_reservacion, clientes(nombre, apellido), habitaciones(numero)");
+
       setVentas(ventasData || []);
       setVentasFiltradas(ventasData || []);
+      setReservaciones(resData || []);
+      // ... resto de cargas
     } catch (error) {
       console.error(error);
     } finally {
@@ -286,236 +282,214 @@ const Ventas = () => {
     cargarDatos();
   }, []);
 
-  return (
-    <Container fluid className="mt-5 px-4">
-      <Row>
-        {/* PANEL IZQUIERDO */}
-        <Col lg={3}>
-          <FormularioVenta
-            nuevaVenta={nuevaVenta}
-            setNuevaVenta={setNuevaVenta}
-            agregarVenta={agregarVenta}
-            reservaciones={reservaciones}
-            empleados={empleados}
-          />
+return (
+  <Container fluid className="mt-5 px-4">
+    <Row>
+      {/* PANEL IZQUIERDO */}
+      <Col lg={3}>
+        <FormularioVenta
+          nuevaVenta={nuevaVenta}
+          setNuevaVenta={setNuevaVenta}
+          agregarVenta={agregarVenta}
+          reservaciones={reservaciones}
+          empleados={empleados}
+        />
 
-          <Card
-            className="border-0 shadow-sm mt-3"
-            style={{ borderRadius: "12px" }}
-          >
-            <Card.Body className="d-flex justify-content-between align-items-center">
-              <span className="fw-bold text-muted">Total General:</span>
+        <Card
+          className="border-0 shadow-sm mt-3"
+          style={{ borderRadius: "12px" }}
+        >
+          <Card.Body className="d-flex justify-content-between align-items-center">
+            <span className="fw-bold text-muted">Total General:</span>
+            <h4
+              className="fw-bold mb-0"
+              style={{ color: "#1a9a69" }}
+            >
+              C${" "}
+              {ventasFiltradas
+                .reduce((acc, v) => acc + parseFloat(v.monto || 0), 0)
+                .toLocaleString("en-US", {
+                  minimumFractionDigits: 2,
+                })}
+            </h4>
+          </Card.Body>
+        </Card>
 
-              <h4
-                className="fw-bold mb-0"
-                style={{ color: "#1a9a69" }}
-              >
-                C${" "}
-                {ventasFiltradas
-                  .reduce(
-                    (acc, v) => acc + parseFloat(v.monto || 0),
-                    0
-                  )
-                  .toLocaleString("en-US", {
-                    minimumFractionDigits: 2,
-                  })}
-              </h4>
-            </Card.Body>
-          </Card>
+        <Button
+          variant="outline-danger"
+          className="w-100 mt-3 shadow-sm"
+          style={{ padding: "10px" }}
+          onClick={generarPDFVentas}
+        >
+          <i className="bi bi-file-earmark-pdf me-2"></i>
+          Descargar Reporte PDF
+        </Button>
 
-          <Button
-            variant="outline-danger"
-            className="w-100 mt-3 shadow-sm"
-            style={{ padding: "10px" }}
-            onClick={generarPDFVentas}
-          >
-            <i className="bi bi-file-earmark-pdf me-2"></i>
-            Descargar Reporte PDF
-          </Button>
+        <Button
+          className="w-100 mt-3 border-0"
+          style={{
+            backgroundColor: "#2c6c62",
+            padding: "10px",
+          }}
+          onClick={() => setMostrarChatModal(true)}
+        >
+          <i className="bi bi-robot me-2"></i>
+          Consultar con IA
+        </Button>
+      </Col>
 
-          <Button
-            className="w-100 mt-3 border-0"
-            style={{
-              backgroundColor: "#2c6c62",
-              padding: "10px",
-            }}
-            onClick={() => setMostrarChatModal(true)}
-          >
-            <i className="bi bi-robot me-2"></i>
-            Consultar con IA
-          </Button>
-        </Col>
-
-        {/* PANEL DERECHO */}
-        <Col lg={9}>
-          <Row className="my-4">
-            <Col md={6}>
-              <CuadroBusquedas
-                textoBusqueda={textoBusqueda}
-                manejarCambioBusqueda={manejarBusqueda}
-              />
-            </Col>
-          </Row>
+      {/* PANEL DERECHO */}
+      <Col lg={9}>
+        <Row className="my-4">
+          <Col md={6}>
+            <CuadroBusquedas
+              textoBusqueda={textoBusqueda}
+              manejarCambioBusqueda={manejarBusqueda}
+            />
+          </Col>
+        </Row>
 
           {/* ==================== TABLA PC ==================== */}
 
           <div
-            className="bg-white p-0 rounded shadow-sm border overflow-hidden d-none d-md-block"
-            style={{ borderRadius: "12px" }}
-          >
-            <Table hover responsive className="align-middle mb-0">
-              <thead className="table-light">
-                <tr
-                  className="small text-uppercase text-muted"
-                  style={{ fontSize: "0.75rem" }}
-                >
-                  <th className="ps-3">ID</th>
-                  <th>CLIENTE</th>
-                  <th className="text-center">HAB</th>
-                  <th>EMPLEADO</th>
-                  <th>TURNO</th>
-                  <th>MONTO</th>
-                  <th>FECHA</th>
-                  <th className="text-center">ACCIONES</th>
+          className="bg-white p-0 rounded shadow-sm border overflow-hidden d-none d-md-block"
+          style={{ borderRadius: "12px" }}
+        >
+          <Table hover responsive className="align-middle mb-0">
+            <thead className="table-light">
+              <tr
+                className="small text-uppercase text-muted"
+                style={{ fontSize: "0.75rem" }}
+              >
+                <th className="ps-3">ID</th>
+                <th>CLIENTE</th>
+                <th className="text-center">HAB</th>
+                <th>EMPLEADO</th>
+                <th>TURNO</th>
+                <th>MONTO</th>
+                <th>FECHA</th>
+                <th className="text-center">ACCIONES</th>
+              </tr>
+            </thead>
+
+            <tbody className="small">
+              {cargando ? (
+                <tr>
+                  <td colSpan="8" className="text-center py-5">
+                    <Spinner
+                      animation="border"
+                      variant="primary"
+                      size="sm"
+                      className="me-2"
+                    />
+                    <span className="text-muted">Cargando registros...</span>
+                  </td>
                 </tr>
-              </thead>
+              ) : ventasFiltradas.length === 0 ? (
+                <tr>
+                  <td colSpan="8" className="text-center py-5 text-muted">
+                    No se encontraron ventas registradas.
+                  </td>
+                </tr>
+              ) : (
+                ventasFiltradas.map((v, index) => (
+                  <tr key={v.id_venta || index}>
+                    <td className="ps-3 fw-bold text-muted">{index + 1}</td>
+                    
+                    {/* MODIFICACIÓN: Mostrar Nombre y Apellido */}
+                    <td className="fw-semibold">
+                      {v.reservaciones?.clientes 
+                        ? `${v.reservaciones.clientes.nombre} ${v.reservaciones.clientes.apellido || ""}` 
+                        : "N/A"}
+                    </td>
 
-              <tbody className="small">
-                {cargando ? (
-                  <tr>
-                    <td colSpan="8" className="text-center py-5">
-                      <Spinner
-                        animation="border"
-                        variant="primary"
-                        size="sm"
-                        className="me-2"
-                      />
+                    <td className="text-center">
+                      <Badge bg="light" text="dark" className="border">
+                        {v.reservaciones?.habitaciones?.numero || "—"}
+                      </Badge>
+                    </td>
 
-                      <span className="text-muted">
-                        Cargando registros...
+                    <td>{v.empleados?.nombre || "No asignado"}</td>
+
+                    <td>
+                      <span
+                        className="badge px-3 py-2"
+                        style={{
+                          backgroundColor: v.empleados?.tipo_turno === "dia" ? "#59cbcb" : "#faec8e",
+                          color: v.empleados?.tipo_turno === "dia" ? "#065f46" : "#991b1b",
+                          borderRadius: "10px",
+                          fontSize: "0.75rem",
+                          fontWeight: "600",
+                        }}
+                      >
+                        {v.empleados?.tipo_turno === "dia" ? "Día" : "Noche"}
                       </span>
                     </td>
-                  </tr>
-                ) : ventasFiltradas.length === 0 ? (
-                  <tr>
-                    <td colSpan="8" className="text-center py-5 text-muted">
-                      No se encontraron ventas registradas.
+
+                    <td className="fw-bold text-success">
+                      C$ {parseFloat(v.monto || 0).toFixed(2)}
+                    </td>
+
+                    <td className="text-muted">
+                      {v.fecha ? new Date(v.fecha).toLocaleDateString() : "S/F"}
+                    </td>
+
+                    <td className="text-center">
+                      <Button
+                        variant="link"
+                        className="text-warning p-1 me-2"
+                        onClick={() => {
+                          setVentaSeleccionada(v);
+                          setShowEditar(true);
+                        }}
+                      >
+                        <i className="bi bi-pencil-square fs-5"></i>
+                      </Button>
+
+                      <Button
+                        variant="link"
+                        className="text-danger p-1"
+                        onClick={() => {
+                          setVentaSeleccionada(v);
+                          setShowEliminar(true);
+                        }}
+                      >
+                        <i className="bi bi-trash3 fs-5"></i>
+                      </Button>
                     </td>
                   </tr>
-                ) : (
-                  ventasFiltradas.map((v, index) => (
-                    <tr key={v.id_venta || index}>
-                      <td className="ps-3 fw-bold text-muted">
-                        {index + 1}
-                      </td>
-
-                      <td className="fw-semibold">
-                        {v.reservaciones?.clientes?.nombre || "N/A"}
-                      </td>
-
-                      <td className="text-center">
-                        <Badge
-                          bg="light"
-                          text="dark"
-                          className="border"
-                        >
-                          {v.reservaciones?.habitaciones?.numero || "—"}
-                        </Badge>
-                      </td>
-
-                      <td>{v.empleados?.nombre || "No asignado"}</td>
-
-                  <td>
-                 <span
-                className="badge px-3 py-2"
-                style={{
-                  backgroundColor:
-                    v.empleados?.tipo_turno === "dia"
-                      ? "#59cbcb"
-                      : "#faec8e",
-
-                  color:
-                    v.empleados?.tipo_turno === "dia"
-                      ? "#065f46"
-                      : "#991b1b",
-
-                  borderRadius: "10px",
-                  fontSize: "0.75rem",
-                  fontWeight: "600",
-                }}
-              >
-                {v.empleados?.tipo_turno === "dia"
-                  ? "🌞 Día"
-                  : "🌙 Noche"}
-              </span>
-             </td>
-
-                      <td className="fw-bold text-success">
-                        C$ {parseFloat(v.monto || 0).toFixed(2)}
-                      </td>
-
-                      <td className="text-muted">
-                        {v.fecha
-                          ? new Date(v.fecha).toLocaleDateString()
-                          : "S/F"}
-                      </td>
-
-                      <td className="text-center">
-                        <Button
-                          variant="link"
-                          className="text-warning p-1 me-2"
-                          onClick={() => {
-                            setVentaSeleccionada(v);
-                            setShowEditar(true);
-                          }}
-                        >
-                          <i className="bi bi-pencil-square fs-5"></i>
-                        </Button>
-
-                        <Button
-                          variant="link"
-                          className="text-danger p-1"
-                          onClick={() => {
-                            setVentaSeleccionada(v);
-                            setShowEliminar(true);
-                          }}
-                        >
-                          <i className="bi bi-trash3 fs-5"></i>
-                        </Button>
-                      </td>
-                    </tr>
-                  ))
-                )}
-              </tbody>
-            </Table>
-          </div>
+                ))
+              )}
+            </tbody>
+          </Table>
+        </div>
 
           {/* ==================== TARJETAS MOBILE ==================== */}
 
-          <div className="d-block d-md-none">
-            {cargando ? (
-              <div className="text-center py-5">
-                <Spinner animation="border" variant="primary" />
-              </div>
-            ) : ventasFiltradas.length === 0 ? (
-              <div className="text-center text-muted py-5">
-                No hay ventas registradas
-              </div>
-            ) : (
-              ventasFiltradas.map((v, index) => (
-                <TarjetaVenta
-                  key={v.id_venta || index}
-                  v={v}
-                  index={index}
-                  setVentaSeleccionada={setVentaSeleccionada}
-                  setShowEditar={setShowEditar}
-                  setShowEliminar={setShowEliminar}
-                />
-              ))
-            )}
-          </div>
-        </Col>
-      </Row>
+         <div className="d-block d-md-none">
+          {cargando ? (
+            <div className="text-center py-5">
+              <Spinner animation="border" variant="primary" />
+            </div>
+          ) : ventasFiltradas.length === 0 ? (
+            <div className="text-center text-muted py-5">
+              No hay ventas registradas
+            </div>
+          ) : (
+            ventasFiltradas.map((v, index) => (
+              <TarjetaVenta
+                key={v.id_venta || index}
+                v={v}
+                index={index}
+                setVentaSeleccionada={setVentaSeleccionada}
+                setShowEditar={setShowEditar}
+                setShowEliminar={setShowEliminar}
+              />
+            ))
+          )}
+        </div>
+      </Col>
+    </Row>
 
       {/* ==================== MODALES ==================== */}
 

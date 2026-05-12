@@ -1,12 +1,10 @@
 import React, { useEffect, useState } from "react";
-import { Container, Row, Col, Button } from "react-bootstrap";
 import { useNavigate } from "react-router-dom";
 import FormularioLogin from "../components/login/FormularioLogin";
 import { supabase } from "../database/supabaseconfig";
 import '../App.css';
 
 const Login = () => {
-
   const [usuario, setUsuario] = useState("");
   const [contrasena, setContrasena] = useState("");
   const [error, setError] = useState(null);
@@ -14,7 +12,7 @@ const Login = () => {
 
   const iniciarSesion = async () => {
     try {
-      const {data, error} = await supabase.auth.signInWithPassword({
+      const { data, error } = await supabase.auth.signInWithPassword({
         email: usuario,
         password: contrasena,
       });
@@ -24,7 +22,7 @@ const Login = () => {
         return;
       }
 
-      if(data.user) {
+      if (data.user) {
         localStorage.setItem("usuario-supabase", usuario);
         navegar("/");
       }
@@ -34,6 +32,7 @@ const Login = () => {
     }
   };
 
+  // 1. Tu useEffect original (Redirección si ya hay sesión)
   useEffect(() => {
     const usuarioGuardado = localStorage.getItem("usuario-supabase");
     if (usuarioGuardado) {
@@ -41,7 +40,28 @@ const Login = () => {
     }
   }, [navegar]);
 
-const estiloContenedor = {
+  // 2. NUEVO useEffect: Detector de tecla Enter
+  useEffect(() => {
+    const detectarEnter = (evento) => {
+      if (evento.key === "Enter") {
+        iniciarSesion(); // Llama a tu función de login
+      }
+    };
+
+    // Le decimos al navegador que escuche cuando se presiona una tecla
+    window.addEventListener("keydown", detectarEnter);
+
+    // IMPORTANTE: Limpiamos el evento cuando salimos de la pantalla de Login
+    // Esto evita que el Enter intente iniciar sesión cuando ya estás en otra página
+    return () => {
+      window.removeEventListener("keydown", detectarEnter);
+    };
+    
+    // El "arreglo de dependencias" [usuario, contrasena] asegura que 
+    // el Enter use los datos más recientes que escribiste.
+  }, [usuario, contrasena]); 
+
+  const estiloContenedor = {
     position: "fixed",
     top: 0,
     left: 0,
@@ -51,9 +71,8 @@ const estiloContenedor = {
     justifyContent: "center",
     alignItems: "center",
     background: "linear-gradient(135deg, #2F8F84 0%, #9FC9C3 100%)",
-    overflow: "hidden",
     padding: "20px",
-  }
+  };
 
   return (
     <div style={estiloContenedor}>
