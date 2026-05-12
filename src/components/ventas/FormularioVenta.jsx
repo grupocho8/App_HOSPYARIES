@@ -1,17 +1,39 @@
 import React from "react";
 import { Card, Form, Button } from "react-bootstrap";
+// 1. Importar Select
+import Select from "react-select";
 
 const FormularioVenta = ({ 
   nuevaVenta, 
   setNuevaVenta, 
   agregarVenta, 
   reservaciones, 
-  empleados // ✅ CAMBIO
+  empleados 
 }) => {
+
+  // 2. Preparar opciones para Reservaciones
+  const opcionesReservaciones = reservaciones.map(res => ({
+    value: res.id_reservacion,
+    label: `Hab ${res.habitaciones?.numero} - ${res.clientes?.nombre}`
+  }));
+
+  // 3. Preparar opciones para Empleados
+  const opcionesEmpleados = empleados.map(emp => ({
+    value: emp.id_empleado,
+    label: `${emp.nombre} - ${emp.tipo_turno === "dia" ? "Día" : "Noche"}`
+  }));
 
   const manejarCambio = (e) => {
     const { name, value } = e.target;
     setNuevaVenta({ ...nuevaVenta, [name]: value });
+  };
+
+  // 4. Manejador para los buscadores Select
+  const manejarCambioSelect = (selectedOption, name) => {
+    setNuevaVenta({
+      ...nuevaVenta,
+      [name]: selectedOption ? selectedOption.value : ""
+    });
   };
 
   return (
@@ -23,43 +45,33 @@ const FormularioVenta = ({
 
         <Form onSubmit={(e) => { e.preventDefault(); agregarVenta(); }}>
 
-          {/* RESERVACIÓN */}
+          {/* RESERVACIÓN CON BUSCADOR */}
           <Form.Group className="mb-3">
             <Form.Label className="small fw-bold">Reservación / Cliente</Form.Label>
-            <Form.Select 
-              name="id_reservacion" 
-              value={nuevaVenta.id_reservacion} 
-              onChange={manejarCambio}
-            >
-              <option value="">Seleccione...</option>
-              {reservaciones.map(res => (
-                <option key={res.id_reservacion} value={res.id_reservacion}>
-                  Hab {res.habitaciones?.numero} - {res.clientes?.nombre}
-                </option>
-              ))}
-            </Form.Select>
+            <Select
+              placeholder="Buscar reservación..."
+              options={opcionesReservaciones}
+              value={opcionesReservaciones.find(opt => opt.value === nuevaVenta.id_reservacion)}
+              onChange={(opt) => manejarCambioSelect(opt, "id_reservacion")}
+              isClearable
+              noOptionsMessage={() => "No se encontraron reservaciones"}
+            />
           </Form.Group>
 
-          {/* 🔥 EMPLEADO + TURNO */}
+          {/* EMPLEADO CON BUSCADOR */}
           <Form.Group className="mb-3">
             <Form.Label className="small fw-bold">Empleado / Turno</Form.Label>
-            <Form.Select 
-              name="id_empleado" // ✅ CAMBIO CLAVE
-              value={nuevaVenta.id_empleado || ""} 
-              onChange={manejarCambio}
-            >
-              <option value="">Seleccione empleado...</option>
-
-              {empleados.map(emp => (
-                <option key={emp.id_empleado} value={emp.id_empleado}>
-                  {emp.nombre} - {emp.tipo_turno === "dia" ? "Día" : "Noche"}
-                </option>
-              ))}
-
-            </Form.Select>
+            <Select
+              placeholder="Seleccione empleado..."
+              options={opcionesEmpleados}
+              value={opcionesEmpleados.find(opt => opt.value === nuevaVenta.id_empleado)}
+              onChange={(opt) => manejarCambioSelect(opt, "id_empleado")}
+              isClearable
+              noOptionsMessage={() => "No se encontró el empleado"}
+            />
           </Form.Group>
 
-          {/* MONTO */}
+          {/* MONTO (Se mantiene igual) */}
           <Form.Group className="mb-4">
             <Form.Label className="small fw-bold">Monto (C$)</Form.Label>
             <Form.Control 
@@ -68,6 +80,7 @@ const FormularioVenta = ({
               step="0.01" 
               value={nuevaVenta.monto} 
               onChange={manejarCambio} 
+              placeholder="0.00"
             />
           </Form.Group>
 

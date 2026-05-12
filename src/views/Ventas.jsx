@@ -9,6 +9,7 @@ import ModalEliminarVenta from "../components/ventas/ModalEliminarVenta";
 import ChatIA from "../components/chat/ChatIA"; // <--- IMPORTACIÓN DE IA
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
+import TarjetaVenta from "../components/ventas/TarjetaVenta";
 
 const Ventas = () => {
   const [ventas, setVentas] = useState([]);
@@ -17,37 +18,53 @@ const Ventas = () => {
   const [empleados, setEmpleados] = useState([]);
   const [textoBusqueda, setTextoBusqueda] = useState("");
   const [cargando, setCargando] = useState(true);
-  const [toast, setToast] = useState({ mostrar: false, mensaje: "", tipo: "" });
+
+  const [toast, setToast] = useState({
+    mostrar: false,
+    mensaje: "",
+    tipo: "",
+  });
 
   const [showEditar, setShowEditar] = useState(false);
   const [showEliminar, setShowEliminar] = useState(false);
   const [ventaSeleccionada, setVentaSeleccionada] = useState(null);
 
-  // ESTADO PARA IA: Controla la visibilidad del chat
   const [mostrarChatModal, setMostrarChatModal] = useState(false);
 
-  const [nuevaVenta, setNuevaVenta] = useState({ 
-    id_reservacion: "", 
-    id_empleado: "", 
-    monto: "" 
+  const [nuevaVenta, setNuevaVenta] = useState({
+    id_reservacion: "",
+    id_empleado: "",
+    monto: "",
   });
 
-  // FUNCIÓN PARA GENERAR EL PDF DE VENTAS
+  // ==================== PDF ====================
+
   const generarPDFVentas = () => {
     const doc = new jsPDF();
 
-    // Encabezado del PDF
-    doc.setFillColor(44, 108, 98); 
-    doc.rect(0, 0, 220, 30, 'F');
-    
+    doc.setFillColor(44, 108, 98);
+    doc.rect(0, 0, 220, 30, "F");
+
     doc.setTextColor(255, 255, 255);
     doc.setFontSize(22);
-    doc.text("Reporte de Ventas - HospyAries", doc.internal.pageSize.getWidth() / 2, 18, { align: "center" });
 
-    // Definir columnas
-    const columnas = ["#", "Cliente", "Hab.", "Empleado", "Turno", "Monto", "Fecha"];
-    
-    // Mapear filas desde ventasFiltradas para que el PDF respete la búsqueda actual
+    doc.text(
+      "Reporte de Ventas - HospyAries",
+      doc.internal.pageSize.getWidth() / 2,
+      18,
+      { align: "center" }
+    );
+
+    const columnas = [
+      "#",
+      "Cliente",
+      "Hab.",
+      "Empleado",
+      "Turno",
+      "Monto",
+      "Fecha",
+    ];
+
     const filas = ventasFiltradas.map((v, index) => [
       index + 1,
       v.reservaciones?.clientes?.nombre || "N/A",
@@ -55,35 +72,49 @@ const Ventas = () => {
       v.empleados?.nombre || "N/A",
       v.empleados?.tipo_turno === "dia" ? "Día" : "Noche",
       `C$ ${parseFloat(v.monto || 0).toFixed(2)}`,
-      v.fecha ? new Date(v.fecha).toLocaleDateString() : "S/F"
+      v.fecha ? new Date(v.fecha).toLocaleDateString() : "S/F",
     ]);
 
-    // Calcular total para el reporte
-    const totalVentas = ventasFiltradas.reduce((acc, v) => acc + parseFloat(v.monto || 0), 0);
+    const totalVentas = ventasFiltradas.reduce(
+      (acc, v) => acc + parseFloat(v.monto || 0),
+      0
+    );
 
     autoTable(doc, {
       head: [columnas],
       body: filas,
       startY: 40,
       theme: "grid",
-      headStyles: { fillColor: [44, 108, 98] }, 
+      headStyles: { fillColor: [44, 108, 98] },
       styles: { fontSize: 9 },
+
       didDrawPage: (data) => {
-        // Pie de página con total y número de página
         const str = "Página " + doc.internal.getNumberOfPages();
+
         doc.setFontSize(10);
         doc.setTextColor(40);
-        doc.text(str, data.settings.margin.left, doc.internal.pageSize.getHeight() - 10);
-        doc.text(`Total Reportado: C$ ${totalVentas.toFixed(2)}`, 140, doc.internal.pageSize.getHeight() - 10);
-      }
+
+        doc.text(
+          str,
+          data.settings.margin.left,
+          doc.internal.pageSize.getHeight() - 10
+        );
+
+        doc.text(
+          `Total Reportado: C$ ${totalVentas.toFixed(2)}`,
+          140,
+          doc.internal.pageSize.getHeight() - 10
+        );
+      },
     });
 
-    // Nombre del archivo con fecha
-    const fecha = new Date().toISOString().split('T')[0];
+    const fecha = new Date().toISOString().split("T")[0];
+
     doc.save(`Reporte_Ventas_${fecha}.pdf`);
   };
 
   // ==================== BÚSQUEDA ====================
+
   const manejarBusqueda = (e) => {
     setTextoBusqueda(e.target.value);
   };
@@ -94,16 +125,24 @@ const Ventas = () => {
     } else {
       const texto = textoBusqueda.toLowerCase();
 
-      const filtradas = ventas.filter((v) =>
-        v.reservaciones?.clientes?.nombre?.toLowerCase().includes(texto) ||
-        v.reservaciones?.habitaciones?.numero?.toString().toLowerCase().includes(texto) ||
-        v.empleados?.nombre?.toLowerCase().includes(texto) ||
-        v.empleados?.tipo_turno?.toLowerCase().includes(texto)
+      const filtradas = ventas.filter(
+        (v) =>
+          v.reservaciones?.clientes?.nombre
+            ?.toLowerCase()
+            .includes(texto) ||
+          v.reservaciones?.habitaciones?.numero
+            ?.toString()
+            .toLowerCase()
+            .includes(texto) ||
+          v.empleados?.nombre?.toLowerCase().includes(texto) ||
+          v.empleados?.tipo_turno?.toLowerCase().includes(texto)
       );
 
       setVentasFiltradas(filtradas);
     }
   }, [textoBusqueda, ventas]);
+
+  // ==================== CARGAR DATOS ====================
 
   const cargarDatos = async () => {
     try {
@@ -120,9 +159,17 @@ const Ventas = () => {
       const { data: ventasData } = await supabase
         .from("ventas")
         .select(`
-          id_venta, monto, fecha,
-          reservaciones (clientes (nombre), habitaciones (numero)),
-          empleados (nombre, tipo_turno)
+          id_venta,
+          monto,
+          fecha,
+          reservaciones (
+            clientes (nombre),
+            habitaciones (numero)
+          ),
+          empleados (
+            nombre,
+            tipo_turno
+          )
         `)
         .order("fecha", { ascending: false });
 
@@ -130,7 +177,6 @@ const Ventas = () => {
       setEmpleados(empData || []);
       setVentas(ventasData || []);
       setVentasFiltradas(ventasData || []);
-
     } catch (error) {
       console.error(error);
     } finally {
@@ -138,46 +184,76 @@ const Ventas = () => {
     }
   };
 
+  // ==================== AGREGAR ====================
+
   const agregarVenta = async () => {
     try {
-      const { error } = await supabase.from("ventas").insert([{
-        id_venta: crypto.randomUUID(),
-        id_reservacion: nuevaVenta.id_reservacion,
-        id_empleado: nuevaVenta.id_empleado,
-        monto: parseFloat(nuevaVenta.monto),
-        fecha: new Date().toISOString()
-      }]);
+      const { error } = await supabase.from("ventas").insert([
+        {
+          id_venta: crypto.randomUUID(),
+          id_reservacion: nuevaVenta.id_reservacion,
+          id_empleado: nuevaVenta.id_empleado,
+          monto: parseFloat(nuevaVenta.monto),
+          fecha: new Date().toISOString(),
+        },
+      ]);
 
       if (error) throw error;
 
-      setToast({ mostrar: true, mensaje: "Venta registrada", tipo: "exito" });
+      setToast({
+        mostrar: true,
+        mensaje: "Venta registrada",
+        tipo: "exito",
+      });
 
-      setNuevaVenta({ id_reservacion: "", id_empleado: "", monto: "" });
+      setNuevaVenta({
+        id_reservacion: "",
+        id_empleado: "",
+        monto: "",
+      });
 
       cargarDatos();
-
     } catch (err) {
-      setToast({ mostrar: true, mensaje: "Error", tipo: "error" });
+      setToast({
+        mostrar: true,
+        mensaje: "Error",
+        tipo: "error",
+      });
     }
   };
+
+  // ==================== ACTUALIZAR ====================
 
   const actualizarVenta = async () => {
     try {
       const { error } = await supabase
         .from("ventas")
-        .update({ monto: parseFloat(ventaSeleccionada.monto) })
+        .update({
+          monto: parseFloat(ventaSeleccionada.monto),
+        })
         .eq("id_venta", ventaSeleccionada.id_venta);
 
       if (error) throw error;
 
-      setToast({ mostrar: true, mensaje: "Venta actualizada", tipo: "exito" });
-      setShowEditar(false);
-      cargarDatos();
+      setToast({
+        mostrar: true,
+        mensaje: "Venta actualizada",
+        tipo: "exito",
+      });
 
+      setShowEditar(false);
+
+      cargarDatos();
     } catch (err) {
-      setToast({ mostrar: true, mensaje: "Error al actualizar", tipo: "error" });
+      setToast({
+        mostrar: true,
+        mensaje: "Error al actualizar",
+        tipo: "error",
+      });
     }
   };
+
+  // ==================== ELIMINAR ====================
 
   const eliminarVenta = async () => {
     try {
@@ -188,198 +264,293 @@ const Ventas = () => {
 
       if (error) throw error;
 
-      setToast({ mostrar: true, mensaje: "Venta eliminada", tipo: "exito" });
-      setShowEliminar(false);
-      cargarDatos();
+      setToast({
+        mostrar: true,
+        mensaje: "Venta eliminada",
+        tipo: "exito",
+      });
 
+      setShowEliminar(false);
+
+      cargarDatos();
     } catch (err) {
-      setToast({ mostrar: true, mensaje: "Error al eliminar", tipo: "error" });
+      setToast({
+        mostrar: true,
+        mensaje: "Error al eliminar",
+        tipo: "error",
+      });
     }
   };
 
-  useEffect(() => { cargarDatos(); }, []);
+  useEffect(() => {
+    cargarDatos();
+  }, []);
 
-return (
-  <Container fluid className="mt-5 px-4">
-    <Row>
-      {/* PANEL IZQUIERDO: FORMULARIO Y TOTAL */}
-      <Col lg={3}>
-        <FormularioVenta
-          nuevaVenta={nuevaVenta}
-          setNuevaVenta={setNuevaVenta}
-          agregarVenta={agregarVenta}
-          reservaciones={reservaciones}
-          empleados={empleados}
-        />
+  return (
+    <Container fluid className="mt-5 px-4">
+      <Row>
+        {/* PANEL IZQUIERDO */}
+        <Col lg={3}>
+          <FormularioVenta
+            nuevaVenta={nuevaVenta}
+            setNuevaVenta={setNuevaVenta}
+            agregarVenta={agregarVenta}
+            reservaciones={reservaciones}
+            empleados={empleados}
+          />
 
-        <Card className="border-0 shadow-sm mt-3" style={{ borderRadius: "12px" }}>
-          <Card.Body className="d-flex justify-content-between align-items-center">
-            <span className="fw-bold text-muted">Total General:</span>
-            <h4 className="fw-bold mb-0" style={{ color: "#1a9a69" }}>
-              C$ {ventasFiltradas.reduce((acc, v) => acc + parseFloat(v.monto || 0), 0).toLocaleString('en-US', { minimumFractionDigits: 2 })}
-            </h4>
-          </Card.Body>
-        </Card>
+          <Card
+            className="border-0 shadow-sm mt-3"
+            style={{ borderRadius: "12px" }}
+          >
+            <Card.Body className="d-flex justify-content-between align-items-center">
+              <span className="fw-bold text-muted">Total General:</span>
 
-        {/* BOTÓN PARA GENERAR PDF */}
-          <Button 
-            variant="outline-danger" 
-            className="w-100 mt-3 shadow-sm" 
-            style={{ padding: '10px' }}
+              <h4
+                className="fw-bold mb-0"
+                style={{ color: "#1a9a69" }}
+              >
+                C${" "}
+                {ventasFiltradas
+                  .reduce(
+                    (acc, v) => acc + parseFloat(v.monto || 0),
+                    0
+                  )
+                  .toLocaleString("en-US", {
+                    minimumFractionDigits: 2,
+                  })}
+              </h4>
+            </Card.Body>
+          </Card>
+
+          <Button
+            variant="outline-danger"
+            className="w-100 mt-3 shadow-sm"
+            style={{ padding: "10px" }}
             onClick={generarPDFVentas}
           >
-            <i className="bi bi-file-earmark-pdf me-2"></i> Descargar Reporte PDF
+            <i className="bi bi-file-earmark-pdf me-2"></i>
+            Descargar Reporte PDF
           </Button>
 
-        {/* BOTÓN DE IA: Estilo personalizado para el hotel */}
-          <Button 
-            className="w-100 mt-3 border-0" 
-            style={{ backgroundColor: '#2c6c62', padding: '10px' }}
+          <Button
+            className="w-100 mt-3 border-0"
+            style={{
+              backgroundColor: "#2c6c62",
+              padding: "10px",
+            }}
             onClick={() => setMostrarChatModal(true)}
           >
-            <i className="bi bi-robot me-2"></i> Consultar con IA
+            <i className="bi bi-robot me-2"></i>
+            Consultar con IA
           </Button>
-      </Col>
+        </Col>
 
-      {/* PANEL DERECHO: BUSCADOR Y TABLA */}
-      <Col lg={9}>
-        <Row className="mb-3">
-          <Col md={6}>
-            <CuadroBusquedas
-              textoBusqueda={textoBusqueda}
-              manejarCambioBusqueda={manejarBusqueda}
-            />
-          </Col>
-        </Row>
+        {/* PANEL DERECHO */}
+        <Col lg={9}>
+          <Row className="my-4">
+            <Col md={6}>
+              <CuadroBusquedas
+                textoBusqueda={textoBusqueda}
+                manejarCambioBusqueda={manejarBusqueda}
+              />
+            </Col>
+          </Row>
 
-        <div className="bg-white p-0 rounded shadow-sm border overflow-hidden" style={{ borderRadius: "12px" }}>
-          <Table hover responsive className="align-middle mb-0">
-            <thead className="table-light">
-              <tr className="small text-uppercase text-muted" style={{ fontSize: "0.75rem" }}>
-                <th className="ps-3">ID</th>
-                <th>CLIENTE</th>
-                <th className="text-center">HAB</th>
-                <th>EMPLEADO</th>
-                <th>TURNO</th>
-                <th>MONTO</th>
-                <th>FECHA</th>
-                <th className="text-center">ACCIONES</th>
-              </tr>
-            </thead>
+          {/* ==================== TABLA PC ==================== */}
 
-            <tbody className="small">
-              {cargando ? (
-                <tr>
-                  <td colSpan="8" className="text-center py-5">
-                    <Spinner animation="border" variant="primary" size="sm" className="me-2" />
-                    <span className="text-muted">Cargando registros...</span>
-                  </td>
+          <div
+            className="bg-white p-0 rounded shadow-sm border overflow-hidden d-none d-md-block"
+            style={{ borderRadius: "12px" }}
+          >
+            <Table hover responsive className="align-middle mb-0">
+              <thead className="table-light">
+                <tr
+                  className="small text-uppercase text-muted"
+                  style={{ fontSize: "0.75rem" }}
+                >
+                  <th className="ps-3">ID</th>
+                  <th>CLIENTE</th>
+                  <th className="text-center">HAB</th>
+                  <th>EMPLEADO</th>
+                  <th>TURNO</th>
+                  <th>MONTO</th>
+                  <th>FECHA</th>
+                  <th className="text-center">ACCIONES</th>
                 </tr>
-              ) : ventasFiltradas.length === 0 ? (
-                <tr>
-                  <td colSpan="8" className="text-center py-5 text-muted">
-                    No se encontraron ventas registradas.
-                  </td>
-                </tr>
-              ) : (
-                ventasFiltradas.map((v, index) => (
-                  <tr key={v.id_venta || index}>
-                    {/* 1. ID ASCENDENTE (Basado en el índice) */}
-                    <td className="ps-3 fw-bold text-muted">{index + 1}</td>
+              </thead>
 
-                    {/* 2. CLIENTE (Validación de relación) */}
-                    <td className="fw-semibold">
-                      {v.reservaciones?.clientes?.nombre || v.cliente_nombre || "N/A"}
-                    </td>
+              <tbody className="small">
+                {cargando ? (
+                  <tr>
+                    <td colSpan="8" className="text-center py-5">
+                      <Spinner
+                        animation="border"
+                        variant="primary"
+                        size="sm"
+                        className="me-2"
+                      />
 
-                    {/* 3. HABITACIÓN */}
-                    <td className="text-center">
-                      <Badge bg="light" text="dark" className="border">
-                        {v.reservaciones?.habitaciones?.numero || v.habitacion_numero || "—"}
-                      </Badge>
-                    </td>
-
-                    {/* 4. EMPLEADO */}
-                    <td>{v.empleados?.nombre || "No asignado"}</td>
-
-                    {/* 5. TURNO (Lógica simplificada) */}
-                    <td>
-                      <span className={`badge ${v.empleados?.tipo_turno === "dia" ? "bg-info-subtle text-info" : "bg-dark-subtle text-dark"}`}>
-                        {v.empleados?.tipo_turno === "dia" ? "Dia" : "Noche"}
+                      <span className="text-muted">
+                        Cargando registros...
                       </span>
                     </td>
-
-                    {/* 6. MONTO */}
-                    <td className="fw-bold text-success">
-                      C$ {parseFloat(v.monto || 0).toFixed(2)}
-                    </td>
-
-                    {/* 7. FECHA */}
-                    <td className="text-muted">
-                      {v.fecha ? new Date(v.fecha).toLocaleDateString() : "S/F"}
-                    </td>
-
-                    {/* 8. ACCIONES */}
-                    <td className="text-center">
-                      <Button
-                        variant="link"
-                        className="text-warning p-1 me-2"
-                        onClick={() => {
-                          setVentaSeleccionada(v);
-                          setShowEditar(true);
-                        }}
-                      >
-                        <i className="bi bi-pencil-square fs-5"></i>
-                      </Button>
-
-                      <Button
-                        variant="link"
-                        className="text-danger p-1"
-                        onClick={() => {
-                          setVentaSeleccionada(v);
-                          setShowEliminar(true);
-                        }}
-                      >
-                        <i className="bi bi-trash3 fs-5"></i>
-                      </Button>
+                  </tr>
+                ) : ventasFiltradas.length === 0 ? (
+                  <tr>
+                    <td colSpan="8" className="text-center py-5 text-muted">
+                      No se encontraron ventas registradas.
                     </td>
                   </tr>
-                ))
-              )}
-            </tbody>
-          </Table>
-        </div>
-      </Col>
-    </Row>
+                ) : (
+                  ventasFiltradas.map((v, index) => (
+                    <tr key={v.id_venta || index}>
+                      <td className="ps-3 fw-bold text-muted">
+                        {index + 1}
+                      </td>
 
-    {/* MODALES Y NOTIFICACIONES */}
-    <ModalEdicionVenta
-      show={showEditar}
-      onHide={() => setShowEditar(false)}
-      ventaSeleccionada={ventaSeleccionada}
-      setVentaSeleccionada={setVentaSeleccionada}
-      actualizarVenta={actualizarVenta}
-    />
+                      <td className="fw-semibold">
+                        {v.reservaciones?.clientes?.nombre || "N/A"}
+                      </td>
 
-    <ModalEliminarVenta
-      show={showEliminar}
-      onHide={() => setShowEliminar(false)}
-      ventaSeleccionada={ventaSeleccionada}
-      eliminarVenta={eliminarVenta}
-    />
+                      <td className="text-center">
+                        <Badge
+                          bg="light"
+                          text="dark"
+                          className="border"
+                        >
+                          {v.reservaciones?.habitaciones?.numero || "—"}
+                        </Badge>
+                      </td>
 
-    <NotificacionOperacion
-      {...toast}
-      onCerrar={() => setToast({ ...toast, mostrar: false })}
-    />
+                      <td>{v.empleados?.nombre || "No asignado"}</td>
 
-    {/* COMPONENTE DE IA: El modal del chat */}
-      <ChatIA 
-        mostrarChatModal={mostrarChatModal} 
-        setMostrarChatModal={setMostrarChatModal} 
+                  <td>
+                 <span
+                className="badge px-3 py-2"
+                style={{
+                  backgroundColor:
+                    v.empleados?.tipo_turno === "dia"
+                      ? "#59cbcb"
+                      : "#faec8e",
+
+                  color:
+                    v.empleados?.tipo_turno === "dia"
+                      ? "#065f46"
+                      : "#991b1b",
+
+                  borderRadius: "10px",
+                  fontSize: "0.75rem",
+                  fontWeight: "600",
+                }}
+              >
+                {v.empleados?.tipo_turno === "dia"
+                  ? "🌞 Día"
+                  : "🌙 Noche"}
+              </span>
+             </td>
+
+                      <td className="fw-bold text-success">
+                        C$ {parseFloat(v.monto || 0).toFixed(2)}
+                      </td>
+
+                      <td className="text-muted">
+                        {v.fecha
+                          ? new Date(v.fecha).toLocaleDateString()
+                          : "S/F"}
+                      </td>
+
+                      <td className="text-center">
+                        <Button
+                          variant="link"
+                          className="text-warning p-1 me-2"
+                          onClick={() => {
+                            setVentaSeleccionada(v);
+                            setShowEditar(true);
+                          }}
+                        >
+                          <i className="bi bi-pencil-square fs-5"></i>
+                        </Button>
+
+                        <Button
+                          variant="link"
+                          className="text-danger p-1"
+                          onClick={() => {
+                            setVentaSeleccionada(v);
+                            setShowEliminar(true);
+                          }}
+                        >
+                          <i className="bi bi-trash3 fs-5"></i>
+                        </Button>
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </Table>
+          </div>
+
+          {/* ==================== TARJETAS MOBILE ==================== */}
+
+          <div className="d-block d-md-none">
+            {cargando ? (
+              <div className="text-center py-5">
+                <Spinner animation="border" variant="primary" />
+              </div>
+            ) : ventasFiltradas.length === 0 ? (
+              <div className="text-center text-muted py-5">
+                No hay ventas registradas
+              </div>
+            ) : (
+              ventasFiltradas.map((v, index) => (
+                <TarjetaVenta
+                  key={v.id_venta || index}
+                  v={v}
+                  index={index}
+                  setVentaSeleccionada={setVentaSeleccionada}
+                  setShowEditar={setShowEditar}
+                  setShowEliminar={setShowEliminar}
+                />
+              ))
+            )}
+          </div>
+        </Col>
+      </Row>
+
+      {/* ==================== MODALES ==================== */}
+
+      <ModalEdicionVenta
+        show={showEditar}
+        onHide={() => setShowEditar(false)}
+        ventaSeleccionada={ventaSeleccionada}
+        setVentaSeleccionada={setVentaSeleccionada}
+        actualizarVenta={actualizarVenta}
       />
-  </Container>
-);
+
+      <ModalEliminarVenta
+        show={showEliminar}
+        onHide={() => setShowEliminar(false)}
+        ventaSeleccionada={ventaSeleccionada}
+        eliminarVenta={eliminarVenta}
+      />
+
+      <NotificacionOperacion
+        {...toast}
+        onCerrar={() =>
+          setToast({
+            ...toast,
+            mostrar: false,
+          })
+        }
+      />
+
+      <ChatIA
+        mostrarChatModal={mostrarChatModal}
+        setMostrarChatModal={setMostrarChatModal}
+      />
+    </Container>
+  );
 };
 
 export default Ventas;
+

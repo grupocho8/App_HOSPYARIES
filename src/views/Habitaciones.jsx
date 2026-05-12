@@ -172,6 +172,7 @@ const agregarHabitacion = async (habitacion) => {
 };
 
 
+
   return (
     <Container className="mt-3">
       <Row className="align-items-center mb-3">

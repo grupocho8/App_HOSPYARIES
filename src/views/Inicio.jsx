@@ -31,7 +31,7 @@ const Inicio = () => {
         style={{
           background: "linear-gradient(135deg, #0F5C4F 0%, #2F8F84 100%)",
           color: "white",
-          padding: "80px 0",
+          padding: "80px 0 80px 0",
           borderBottomLeftRadius: "50px",
           borderBottomRightRadius: "50px",
         }}
@@ -52,7 +52,7 @@ const Inicio = () => {
                 onClick={irAReservaciones}
                 style={{
                   backgroundColor: "#0F5C4F",
-                  border: "2px solid #BFDAD6",
+                  border: "4px solid #BFDAD6",
                   fontWeight: "bold",
                   marginTop: "25px",
                   padding: "12px 40px",
@@ -106,29 +106,32 @@ const Inicio = () => {
       </Container>
 
       <Container className="mt-5 mb-5">
-        <Card
+     <Card
           style={{
             background: "linear-gradient(90deg, #78B7AF 0%, #9FC9C3 100%)",
             border: "none",
             borderRadius: "30px",
           }}
-          className="text-center p-5"
+          className="p-4 p-md-5" // Ajusté el padding para móviles
         >
-          <Card.Body>
+          {/* Añadimos d-flex flex-column align-items-center para centrar todo el bloque */}
+          <Card.Body className="d-flex flex-column align-items-center text-center">
             <h2 style={{ color: "#0F5C4F", fontWeight: "800" }}>Gestión de Habitaciones</h2>
-            <p style={{ fontSize: "1.2rem", color: "#0F5C4F" }}>
+            <p style={{ fontSize: "1.1rem", color: "#0F5C4F", maxWidth: "600px" }}>
               Accede al panel administrativo para ver y editar el estado de las habitaciones.
             </p>
             
+            {/* El botón ahora se centrará respecto a su contenedor padre flex */}
             <Button
               size="lg"
               onClick={irAHabitaciones}
               style={{
                 backgroundColor: "#0F5C4F",
-                padding: "12px 60px",
+                padding: "12px 40px", // Ajusté un poco el padding horizontal
                 borderRadius: "30px",
                 border: "none",
                 fontWeight: "bold",
+                marginTop: "10px" // Espacio extra arriba del botón
               }}
             >
               Ver Habitaciones

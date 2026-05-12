@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { Modal, Form, Button, Row, Col } from "react-bootstrap";
+import Select from "react-select";
 
 const ModalRegistroReservaciones = ({
   mostrarModal,
@@ -12,9 +13,29 @@ const ModalRegistroReservaciones = ({
 }) => {
   const [deshabilitado, setDeshabilitado] = useState(false);
 
+  // 1. Preparar opciones para Clientes
+  const opcionesClientes = clientes.map((c) => ({
+    value: c.id_cliente,
+    label: c.nombre,
+  }));
+
+  // 2. Preparar opciones para Habitaciones
+  const opcionesHabitaciones = habitaciones.map((h) => ({
+    value: h.id_habitacion,
+    label: `Hab. ${h.numero}`,
+  }));
+
   const manejoCambioInput = (e) => {
     const { name, value } = e.target;
     setNuevaReservacion((prev) => ({ ...prev, [name]: value }));
+  };
+
+  // Manejadores para los buscadores Select
+  const manejoCambioSelect = (selectedOption, fieldName) => {
+    setNuevaReservacion((prev) => ({
+      ...prev,
+      [fieldName]: selectedOption ? selectedOption.value : "",
+    }));
   };
 
   const handleAgregar = async () => {
@@ -32,29 +53,33 @@ const ModalRegistroReservaciones = ({
       <Modal.Body>
         <Form>
           <Row>
-            {/* Selección de Cliente */}
+            {/* Buscador de Clientes */}
             <Col xs={12} md={6}>
               <Form.Group className="mb-3">
                 <Form.Label>Cliente *</Form.Label>
-                <Form.Select name="id_cliente" value={nuevaReservacion.id_cliente} onChange={manejoCambioInput}>
-                  <option value="">Seleccione un cliente...</option>
-                  {clientes.map((c) => (
-                    <option key={c.id_cliente} value={c.id_cliente}>{c.nombre}</option>
-                  ))}
-                </Form.Select>
+                <Select
+                  placeholder="Buscar cliente..."
+                  options={opcionesClientes}
+                  onChange={(opt) => manejoCambioSelect(opt, "id_cliente")}
+                  value={opcionesClientes.find(opt => opt.value === nuevaReservacion.id_cliente)}
+                  isClearable
+                  noOptionsMessage={() => "No se encontraron clientes"}
+                />
               </Form.Group>
             </Col>
 
-            {/* Selección de Habitación */}
+            {/* Buscador de Habitaciones */}
             <Col xs={12} md={6}>
               <Form.Group className="mb-3">
                 <Form.Label>Habitación *</Form.Label>
-                <Form.Select name="id_habitacion" value={nuevaReservacion.id_habitacion} onChange={manejoCambioInput}>
-                  <option value="">Seleccione habitación...</option>
-                  {habitaciones.map((h) => (
-                    <option key={h.id_habitacion} value={h.id_habitacion}>Hab. {h.numero}</option>
-                  ))}
-                </Form.Select>
+                <Select
+                  placeholder="Buscar habitación..."
+                  options={opcionesHabitaciones}
+                  onChange={(opt) => manejoCambioSelect(opt, "id_habitacion")}
+                  value={opcionesHabitaciones.find(opt => opt.value === nuevaReservacion.id_habitacion)}
+                  isClearable
+                  noOptionsMessage={() => "No se encontró la habitación"}
+                />
               </Form.Group>
             </Col>
 
@@ -77,8 +102,8 @@ const ModalRegistroReservaciones = ({
               <Form.Group className="mb-3">
                 <Form.Label>Estado Inicial</Form.Label>
                 <Form.Select name="estado" value={nuevaReservacion.estado} onChange={manejoCambioInput}>
-                  <option value="finalizada">Finalizada</option>
                   <option value="activa">Activa</option>
+                  <option value="finalizada">Finalizada</option>
                   <option value="cancelada">Cancelada</option>
                 </Form.Select>
               </Form.Group>

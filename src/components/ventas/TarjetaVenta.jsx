@@ -32,16 +32,32 @@ const TarjetaVenta = ({ v, index, setVentaSeleccionada, setShowEditar, setShowEl
         <Col xs={6} className="p-3 bg-white text-end">
           <div className="d-flex flex-column justify-content-between h-100">
             <div>
-              <div className="text-success fw-bold h5 mb-0">
+              <div className="text-success fw-bold h5 mb-2">
                 C$ {parseFloat(v.monto || 0).toFixed(2)}
               </div>
-              <Badge 
-                bg={v.empleados?.tipo_turno === "dia" ? "info" : "secondary"} 
-                className="mt-1"
-                style={{ fontSize: '0.65rem' }}
+              
+              {/* DISTINTIVO DE TURNO PERSONALIZADO */}
+              <span
+                className="badge px-3 py-2"
+                style={{
+                  backgroundColor:
+                    v.empleados?.tipo_turno === "dia"
+                      ? "#59cbcb"
+                      : "#faec8e",
+                  color:
+                    v.empleados?.tipo_turno === "dia"
+                      ? "#065f46"
+                      : "#991b1b",
+                  borderRadius: "10px",
+                  fontSize: "0.75rem",
+                  fontWeight: "600",
+                  display: "inline-block" // Para asegurar que respete el padding
+                }}
               >
-                {v.empleados?.tipo_turno === "dia" ? "Turno Día" : "Turno Noche"}
-              </Badge>
+                {v.empleados?.tipo_turno === "dia"
+                  ? "🌞 Día"
+                  : "🌙 Noche"}
+              </span>
             </div>
 
             <div className="mt-3">

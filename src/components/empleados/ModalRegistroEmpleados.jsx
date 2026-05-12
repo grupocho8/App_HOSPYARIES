@@ -1,3 +1,4 @@
+
 import React, { useState } from "react";
 import { Modal, Form, Button, InputGroup } from "react-bootstrap";
 
@@ -27,6 +28,7 @@ const ModalRegistroEmpleados = ({
         if (
             !nuevoEmpleado.nombre.trim() ||
             !nuevoEmpleado.rol ||
+            !nuevoEmpleado.tipo_turno ||
             !nuevoEmpleado.usuario.trim() ||
             !nuevoEmpleado.password
         ) {
@@ -63,9 +65,10 @@ const ModalRegistroEmpleados = ({
 
             <Modal.Body>
                 <Form>
-                    {/* NOMBRE */}
+
                     <Form.Group className="mb-3">
                         <Form.Label>Nombre</Form.Label>
+
                         <Form.Control
                             type="text"
                             name="nombre"
@@ -74,28 +77,59 @@ const ModalRegistroEmpleados = ({
                             isInvalid={!nombreValido}
                             placeholder="Ingresa el nombre"
                         />
+
                         <Form.Control.Feedback type="invalid">
                             El nombre no debe contener números.
                         </Form.Control.Feedback>
                     </Form.Group>
 
-                    {/* ROL */}
                     <Form.Group className="mb-3">
                         <Form.Label>Rol</Form.Label>
+
                         <Form.Select
                             name="rol"
                             value={nuevoEmpleado.rol}
                             onChange={manejoCambioInput}
                         >
-                            <option value="">Selecciona un rol</option>
-                            <option value="administrador">Administrador</option>
-                            <option value="recepcionista">Recepcionista</option>
+                            <option value="">
+                                Selecciona un rol
+                            </option>
+
+                            <option value="administrador">
+                                Administrador
+                            </option>
+
+                            <option value="recepcionista">
+                                Recepcionista
+                            </option>
                         </Form.Select>
                     </Form.Group>
 
-                    {/* USUARIO */}
+                    <Form.Group className="mb-3">
+                        <Form.Label>Turno</Form.Label>
+
+                        <Form.Select
+                            name="tipo_turno"
+                            value={nuevoEmpleado.tipo_turno}
+                            onChange={manejoCambioInput}
+                        >
+                            <option value="">
+                                Selecciona un turno
+                            </option>
+
+                            <option value="dia">
+                                Día
+                            </option>
+
+                            <option value="noche">
+                                Noche
+                            </option>
+                        </Form.Select>
+                    </Form.Group>
+
                     <Form.Group className="mb-3">
                         <Form.Label>Usuario</Form.Label>
+
                         <Form.Control
                             type="text"
                             name="usuario"
@@ -106,29 +140,38 @@ const ModalRegistroEmpleados = ({
                         />
                     </Form.Group>
 
-                    {/* PASSWORD CON OJITO 👁️ */}
                     <Form.Group className="mb-3">
                         <Form.Label>Password</Form.Label>
+
                         <InputGroup>
                             <Form.Control
-                                type={mostrarPassword ? "text" : "password"}
+                                type={
+                                    mostrarPassword
+                                        ? "text"
+                                        : "password"
+                                }
                                 name="password"
                                 value={nuevoEmpleado.password}
                                 onChange={manejoCambioInput}
                                 maxLength={8}
                                 isInvalid={
-                                    nuevoEmpleado.password !== "" && !passwordValido
+                                    nuevoEmpleado.password !== "" &&
+                                    !passwordValido
                                 }
                                 placeholder="Máx 8 caracteres"
                             />
 
                             <Button
                                 variant="outline-secondary"
-                                onClick={() => setMostrarPassword(!mostrarPassword)}
+                                onClick={() =>
+                                    setMostrarPassword(!mostrarPassword)
+                                }
                             >
                                 <i
                                     className={`bi ${
-                                        mostrarPassword ? "bi-eye-slash" : "bi-eye"
+                                        mostrarPassword
+                                            ? "bi-eye-slash"
+                                            : "bi-eye"
                                     }`}
                                 ></i>
                             </Button>
@@ -157,12 +200,15 @@ const ModalRegistroEmpleados = ({
                         !passwordValido ||
                         nuevoEmpleado.nombre.trim() === "" ||
                         nuevoEmpleado.rol === "" ||
+                        nuevoEmpleado.tipo_turno === "" ||
                         deshabilitado
                     }
                     className="color-navbar border-0"
                     style={{ backgroundColor: "#0F5C4F" }}
                 >
-                    {deshabilitado ? "Guardando..." : "Guardar"}
+                    {deshabilitado
+                        ? "Guardando..."
+                        : "Guardar"}
                 </Button>
             </Modal.Footer>
         </Modal>
@@ -170,3 +216,4 @@ const ModalRegistroEmpleados = ({
 };
 
 export default ModalRegistroEmpleados;
+

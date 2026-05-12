@@ -78,9 +78,28 @@ const TarjetaEmpleados = ({
 
                       {/* ✅ NUEVO: TURNO */}
                       <strong>Turno:</strong>{" "}
-                      <Badge bg={empleado.tipo_turno === "dia" ? "warning" : "dark"}>
-                        {empleado.tipo_turno === "dia" ? "Día" : "Noche"}
-                      </Badge>
+                  <span
+                    className="badge px-2 py-1"
+                    style={{
+                      backgroundColor:
+                        empleado.tipo_turno === "dia"
+                          ? "#59cbcb"
+                          : "#faec8e",
+
+                      color:
+                        empleado.tipo_turno === "dia"
+                          ? "#ffffff"
+                          : "#5c4b00",
+
+                      borderRadius: "8px",
+                      fontSize: "0.70rem",
+                      fontWeight: "600",
+                    }}
+                  >
+                    {empleado.tipo_turno === "dia"
+                      ? "Día"
+                      : "Noche"}
+                  </span>
                     </Card.Text>
                   </Card.Body>
 
