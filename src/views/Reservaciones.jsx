@@ -107,69 +107,104 @@ const cargarReservaciones = async () => {
     }
   }, [textoBusqueda, reservaciones]);
 
-  const agregarReservacion = async () => {
-    try {
-      const { error } = await supabase.from("reservaciones").insert([
-        {
-          id_reservacion: crypto.randomUUID(),
-          ...nuevaReservacion
-        }
-      ]);
-      if (error) throw error;
+const agregarReservacion = async () => {
+  try {
+    // Insertar la reservación
+    const { error: errorReserva } = await supabase.from("reservaciones").insert([
+      {
+        id_reservacion: crypto.randomUUID(),
+        ...nuevaReservacion
+      }
+    ]);
+    if (errorReserva) throw errorReserva;
 
-      setToast({ mostrar: true, mensaje: "Reservación creada", tipo: "exito" });
-      setMostrarModal(false);
-      setNuevaReservacion({
-        id_cliente: "",
-        id_habitacion: "",
-        fecha_inicio: "",
-        fecha_fin: "",
-        estado: "Pendiente"
-      });
+    //Actualizar el estado de la habitación a 'ocupada'
+    const { error: errorHabitacion } = await supabase
+      .from("habitaciones")
+      .update({ estado: "ocupada" }) 
+      .eq("id_habitacion", nuevaReservacion.id_habitacion);
 
-      cargarReservaciones();
-    } catch (err) {
-      setToast({ mostrar: true, mensaje: "Error al crear reservación", tipo: "error" });
+    if (errorHabitacion) throw errorHabitacion;
+
+    setToast({ mostrar: true, mensaje: "Reservación creada y habitación ocupada", tipo: "exito" });
+    setMostrarModal(false);
+    setNuevaReservacion({
+      id_cliente: "",
+      id_habitacion: "",
+      fecha_inicio: "",
+      fecha_fin: "",
+      estado: "Pendiente"
+    });
+
+    cargarReservaciones();
+  } catch (err) {
+    console.error(err);
+    setToast({ mostrar: true, mensaje: "Error en la operación", tipo: "error" });
+  }
+};
+
+const actualizarReservacion = async () => {
+  try {
+    // Actualizar la reservación
+    const { error: errorReserva } = await supabase
+      .from("reservaciones")
+      .update({
+        fecha_inicio: reservacionEditar.fecha_inicio,
+        fecha_fin: reservacionEditar.fecha_fin,
+        estado: reservacionEditar.estado
+      })
+      .eq("id_reservacion", reservacionEditar.id_reservacion);
+
+    if (errorReserva) throw errorReserva;
+
+    // LÓGICA DE SINCRONIZACIÓN:
+    // Determinamos el nuevo estado de la habitación según el estado de la reserva
+    let nuevoEstadoHabitacion = "ocupada"; // por defecto sigue ocupada
+
+    if (reservacionEditar.estado === "finalizada" || reservacionEditar.estado === "cancelada") {
+      nuevoEstadoHabitacion = "disponible";
     }
-  };
 
-  const actualizarReservacion = async () => {
-    try {
-      const { error } = await supabase
-        .from("reservaciones")
-        .update({
-          fecha_inicio: reservacionEditar.fecha_inicio,
-          fecha_fin: reservacionEditar.fecha_fin,
-          estado: reservacionEditar.estado
-        })
-        .eq("id_reservacion", reservacionEditar.id_reservacion);
+    const { error: errorHabitacion } = await supabase
+      .from("habitaciones")
+      .update({ estado: nuevoEstadoHabitacion })
+      .eq("id_habitacion", reservacionEditar.id_habitacion);
 
-      if (error) throw error;
+    if (errorHabitacion) throw errorHabitacion;
 
-      setToast({ mostrar: true, mensaje: "Reservación actualizada", tipo: "exito" });
-      setMostrarModalEdicion(false);
-      cargarReservaciones();
-    } catch (err) {
-      setToast({ mostrar: true, mensaje: "Error al actualizar", tipo: "error" });
-    }
-  };
+    setToast({ mostrar: true, mensaje: "Registro y estado de habitación actualizados", tipo: "exito" });
+    setMostrarModalEdicion(false);
+    cargarReservaciones();
+  } catch (err) {
+    setToast({ mostrar: true, mensaje: "Error al actualizar", tipo: "error" });
+  }
+};
 
-  const eliminarReservacion = async () => {
-    try {
-      const { error } = await supabase
-        .from("reservaciones")
-        .delete()
-        .eq("id_reservacion", reservacionAEliminar.id_reservacion);
+const eliminarReservacion = async () => {
+  try {
+    // Antes de borrar, necesitamos el ID de la habitación
+    const idHabitacionLiberar = reservacionAEliminar.id_habitacion;
 
-      if (error) throw error;
+    const { error: errorBorrado } = await supabase
+      .from("reservaciones")
+      .delete()
+      .eq("id_reservacion", reservacionAEliminar.id_reservacion);
 
-      setToast({ mostrar: true, mensaje: "Registro eliminado", tipo: "exito" });
-      setMostrarModalEliminacion(false);
-      cargarReservaciones();
-    } catch (err) {
-      setToast({ mostrar: true, mensaje: "Error al eliminar", tipo: "error" });
-    }
-  };
+    if (errorBorrado) throw errorBorrado;
+
+    // LIBERAR HABITACIÓN
+    await supabase
+      .from("habitaciones")
+      .update({ estado: "disponible" })
+      .eq("id_habitacion", idHabitacionLiberar);
+
+    setToast({ mostrar: true, mensaje: "Reserva eliminada y habitación liberada", tipo: "exito" });
+    setMostrarModalEliminacion(false);
+    cargarReservaciones();
+  } catch (err) {
+    setToast({ mostrar: true, mensaje: "Error al eliminar", tipo: "error" });
+  }
+};
 
   const abrirModalEdicion = (res) => {
     setReservacionEditar(res);
