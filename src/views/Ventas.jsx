@@ -1,15 +1,26 @@
 import React, { useEffect, useState } from "react";
-import { Container, Row, Col, Table, Button, Spinner, Card, Badge } from "react-bootstrap";
+import {
+  Container,
+  Row,
+  Col,
+  Table,
+  Button,
+  Spinner,
+  Badge,
+} from "react-bootstrap";
+
 import { supabase } from "../database/supabaseconfig";
+
 import NotificacionOperacion from "../components/NotificacionOperacion";
 import CuadroBusquedas from "../components/busquedas/CuadroBusquedas";
 import FormularioVenta from "../components/ventas/FormularioVenta";
 import ModalEdicionVenta from "../components/ventas/ModalEdicionVenta";
 import ModalEliminarVenta from "../components/ventas/ModalEliminarVenta";
-import ChatIA from "../components/chat/ChatIA"; // <--- IMPORTACIÓN DE IA
+import ChatIA from "../components/chat/ChatIA";
+import TarjetaVenta from "../components/ventas/TarjetaVenta";
+
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
-import TarjetaVenta from "../components/ventas/TarjetaVenta";
 
 const Ventas = () => {
   const [ventas, setVentas] = useState([]);
@@ -27,6 +38,7 @@ const Ventas = () => {
 
   const [showEditar, setShowEditar] = useState(false);
   const [showEliminar, setShowEliminar] = useState(false);
+
   const [ventaSeleccionada, setVentaSeleccionada] = useState(null);
 
   const [mostrarChatModal, setMostrarChatModal] = useState(false);
@@ -37,142 +49,62 @@ const Ventas = () => {
     monto: "",
   });
 
-  // ==================== PDF ====================
-
-const generarPDFVentas = () => {
-    const doc = new jsPDF();
-
-    doc.setFillColor(44, 108, 98);
-    doc.rect(0, 0, 220, 30, "F");
-
-    doc.setTextColor(255, 255, 255);
-    doc.setFontSize(22);
-
-    doc.text(
-      "Reporte de Ventas - HospyAries",
-      doc.internal.pageSize.getWidth() / 2,
-      18,
-      { align: "center" }
-    );
-
-    const columnas = [
-      "#",
-      "Cliente",
-      "Hab.",
-      "Empleado",
-      "Turno",
-      "Monto",
-      "Fecha",
-    ];
-
-    const filas = ventasFiltradas.map((v, index) => [
-      index + 1,
-      // MODIFICACIÓN: Concatenamos nombre y apellido
-      v.reservaciones?.clientes 
-        ? `${v.reservaciones.clientes.nombre} ${v.reservaciones.clientes.apellido || ""}` 
-        : "N/A",
-      v.reservaciones?.habitaciones?.numero || "—",
-      v.empleados?.nombre || "N/A",
-      v.empleados?.tipo_turno === "dia" ? "Día" : "Noche",
-      `C$ ${parseFloat(v.monto || 0).toFixed(2)}`,
-      v.fecha ? new Date(v.fecha).toLocaleDateString() : "S/F",
-    ]);
-
-    const totalVentas = ventasFiltradas.reduce(
-      (acc, v) => acc + parseFloat(v.monto || 0),
-      0
-    );
-
-    autoTable(doc, {
-      head: [columnas],
-      body: filas,
-      startY: 40,
-      theme: "grid",
-      headStyles: { fillColor: [44, 108, 98] },
-      styles: { fontSize: 9 },
-
-      didDrawPage: (data) => {
-        const str = "Página " + doc.internal.getNumberOfPages();
-
-        doc.setFontSize(10);
-        doc.setTextColor(40);
-
-        doc.text(
-          str,
-          data.settings.margin.left,
-          doc.internal.pageSize.getHeight() - 10
-        );
-
-        doc.text(
-          `Total Reportado: C$ ${totalVentas.toFixed(2)}`,
-          140,
-          doc.internal.pageSize.getHeight() - 10
-        );
-      },
-    });
-
-    const fecha = new Date().toISOString().split("T")[0];
-
-    doc.save(`Reporte_Ventas_${fecha}.pdf`);
-  };
-
-  // ==================== BÚSQUEDA ====================
-
-  const manejarBusqueda = (e) => {
-    setTextoBusqueda(e.target.value);
-  };
-
-useEffect(() => {
-    if (!textoBusqueda.trim()) {
-      setVentasFiltradas(ventas);
-    } else {
-      const texto = textoBusqueda.toLowerCase();
-      const filtradas = ventas.filter((v) => {
-        const cliente = v.reservaciones?.clientes;
-        const nombreCompleto = `${cliente?.nombre} ${cliente?.apellido}`.toLowerCase();
-        
-        return (
-          nombreCompleto.includes(texto) || 
-          v.reservaciones?.habitaciones?.numero?.toString().includes(texto) ||
-          v.empleados?.nombre?.toLowerCase().includes(texto)
-        );
-      });
-      setVentasFiltradas(filtradas);
-    }
-  }, [textoBusqueda, ventas]);
-
   // ==================== CARGAR DATOS ====================
 
   const cargarDatos = async () => {
     try {
       setCargando(true);
-      // Traemos nombre y apellido de la relación de clientes
+
+      const { data: resData } = await supabase.from("reservaciones").select(`
+          id_reservacion,
+          clientes (
+            nombre,
+            apellido
+          ),
+          habitaciones (
+            numero,
+            tipo
+          )
+        `);
+
+      const { data: empData } = await supabase.from("empleados").select(`
+          id_empleado,
+          nombre,
+          tipo_turno
+        `);
+
       const { data: ventasData } = await supabase
         .from("ventas")
-        .select(`
+        .select(
+          `
           id_venta,
           monto,
           fecha,
+
           reservaciones (
-            clientes (nombre, apellido), 
-            habitaciones (numero)
+            clientes (
+              nombre,
+              apellido
+            ),
+
+            habitaciones (
+              numero,
+              tipo
+            )
           ),
+
           empleados (
             nombre,
             tipo_turno
           )
-        `)
+        `,
+        )
         .order("fecha", { ascending: false });
 
-      // También actualizamos la carga de reservaciones para el formulario
-      const { data: resData } = await supabase
-        .from("reservaciones")
-        .select("id_reservacion, clientes(nombre, apellido), habitaciones(numero)");
-
+      setReservaciones(resData || []);
+      setEmpleados(empData || []);
       setVentas(ventasData || []);
       setVentasFiltradas(ventasData || []);
-      setReservaciones(resData || []);
-      // ... resto de cargas
     } catch (error) {
       console.error(error);
     } finally {
@@ -180,47 +112,89 @@ useEffect(() => {
     }
   };
 
-  // ==================== AGREGAR ====================
+  // ==================== AGREGAR VENTA ====================
 
-  const agregarVenta = async () => {
-    try {
-      const { error } = await supabase.from("ventas").insert([
-        {
-          id_venta: crypto.randomUUID(),
-          id_reservacion: nuevaVenta.id_reservacion,
-          id_empleado: nuevaVenta.id_empleado,
-          monto: parseFloat(nuevaVenta.monto),
-          fecha: new Date().toISOString(),
-        },
-      ]);
+const manejarAgregarVenta = async () => {
+  if (
+    !nuevaVenta.id_reservacion ||
+    !nuevaVenta.id_empleado ||
+    !nuevaVenta.monto
+  ) {
+    setToast({
+      mostrar: true,
+      mensaje: "Complete todos los campos",
+      tipo: "error",
+    });
 
-      if (error) throw error;
+    return;
+  }
 
+  try {
+
+    // ==================== VALIDAR DUPLICADOS ====================
+
+    const { data: ventaExistente } = await supabase
+      .from("ventas")
+      .select("id_venta")
+      .eq("id_reservacion", nuevaVenta.id_reservacion)
+      .maybeSingle();
+
+    // SI YA EXISTE
+
+    if (ventaExistente) {
       setToast({
         mostrar: true,
-        mensaje: "Venta registrada",
-        tipo: "exito",
-      });
-
-      setNuevaVenta({
-        id_reservacion: "",
-        id_empleado: "",
-        monto: "",
-      });
-
-      cargarDatos();
-    } catch (err) {
-      setToast({
-        mostrar: true,
-        mensaje: "Error",
+        mensaje: "Esta reservación ya tiene una venta registrada",
         tipo: "error",
       });
+
+      return;
     }
-  };
+
+    // ==================== INSERTAR ====================
+
+    const { error } = await supabase.from("ventas").insert([
+      {
+        id_venta: crypto.randomUUID(),
+        id_reservacion: nuevaVenta.id_reservacion,
+        id_empleado: nuevaVenta.id_empleado,
+        monto: parseFloat(nuevaVenta.monto),
+        fecha: new Date().toISOString(),
+      },
+    ]);
+
+    if (error) throw error;
+
+    setToast({
+      mostrar: true,
+      mensaje: "Venta registrada correctamente",
+      tipo: "exito",
+    });
+
+    // ==================== LIMPIAR FORMULARIO ====================
+
+    setNuevaVenta({
+      id_reservacion: "",
+      id_empleado: "",
+      monto: "",
+    });
+
+    cargarDatos();
+
+  } catch (error) {
+    console.error(error);
+
+    setToast({
+      mostrar: true,
+      mensaje: "Error al registrar",
+      tipo: "error",
+    });
+  }
+};
 
   // ==================== ACTUALIZAR ====================
 
-  const actualizarVenta = async () => {
+  const manejarActualizarVenta = async () => {
     try {
       const { error } = await supabase
         .from("ventas")
@@ -240,7 +214,9 @@ useEffect(() => {
       setShowEditar(false);
 
       cargarDatos();
-    } catch (err) {
+    } catch (error) {
+      console.error(error);
+
       setToast({
         mostrar: true,
         mensaje: "Error al actualizar",
@@ -251,7 +227,9 @@ useEffect(() => {
 
   // ==================== ELIMINAR ====================
 
-  const eliminarVenta = async () => {
+  const manejarEliminarVenta = async () => {
+    if (!ventaSeleccionada) return;
+
     try {
       const { error } = await supabase
         .from("ventas")
@@ -269,7 +247,9 @@ useEffect(() => {
       setShowEliminar(false);
 
       cargarDatos();
-    } catch (err) {
+    } catch (error) {
+      console.error(error);
+
       setToast({
         mostrar: true,
         mensaje: "Error al eliminar",
@@ -278,235 +258,500 @@ useEffect(() => {
     }
   };
 
+  // ==================== BUSCADOR ====================
+
+  useEffect(() => {
+    const filtradas = ventas.filter((v) => {
+      const query = textoBusqueda.toLowerCase();
+
+      const cliente =
+        `${v.reservaciones?.clientes?.nombre || ""} ${v.reservaciones?.clientes?.apellido || ""}`.toLowerCase();
+
+      const habitacion =
+        v.reservaciones?.habitaciones?.numero?.toString().toLowerCase() || "";
+
+      const empleado = v.empleados?.nombre?.toLowerCase() || "";
+
+      return (
+        cliente.includes(query) ||
+        habitacion.includes(query) ||
+        empleado.includes(query)
+      );
+    });
+
+    setVentasFiltradas(filtradas);
+  }, [textoBusqueda, ventas]);
+
+  // ==================== PDF INDIVIDUAL ====================
+
+  const generarPDFIndividual = (v) => {
+    const doc = new jsPDF();
+
+    const clienteNombre = `${v.reservaciones?.clientes?.nombre || "N/A"} ${v.reservaciones?.clientes?.apellido || ""}`;
+
+    doc.setFillColor(44, 108, 98);
+
+    doc.rect(0, 0, 220, 30, "F");
+
+    doc.setTextColor(255, 255, 255);
+
+    doc.setFontSize(20);
+
+    doc.text("Comprobante de Venta", 105, 18, { align: "center" });
+
+    doc.setTextColor(0, 0, 0);
+
+    doc.setFontSize(12);
+
+    doc.text(`Cliente: ${clienteNombre}`, 20, 50);
+
+    doc.text(`Habitación: ${v.reservaciones?.habitaciones?.numero}`, 20, 60);
+
+    doc.text(`Tipo: ${v.reservaciones?.habitaciones?.tipo}`, 20, 70);
+
+    doc.text(`Empleado: ${v.empleados?.nombre}`, 20, 80);
+
+    doc.text(
+      `Turno: ${v.empleados?.tipo_turno === "dia" ? "Día" : "Noche"}`,
+      20,
+      90,
+    );
+
+    doc.text(`Monto: C$ ${parseFloat(v.monto).toFixed(2)}`, 20, 100);
+
+    doc.text(
+      `Fecha: ${v.fecha ? new Date(v.fecha).toLocaleDateString() : "S/F"}`,
+      20,
+      110,
+    );
+
+    doc.save(`Venta_${clienteNombre}.pdf`);
+  };
+
+  // ==================== PDF GENERAL ====================
+
+  const generarPDFVentas = () => {
+    const doc = new jsPDF();
+
+    // ==================== ENCABEZADO ====================
+
+    doc.setFillColor(44, 108, 98);
+
+    doc.rect(0, 0, 220, 30, "F");
+
+    doc.setTextColor(255, 255, 255);
+
+    doc.setFontSize(22);
+
+    doc.text(
+      "Reporte de Ventas - Hotel 2 Aries",
+      doc.internal.pageSize.getWidth() / 2,
+      18,
+      { align: "center" },
+    );
+
+    // ==================== FECHA ====================
+
+    doc.setTextColor(90);
+
+    doc.setFontSize(11);
+
+    doc.text(`Fecha de generación: ${new Date().toLocaleDateString()}`, 14, 40);
+
+    // ==================== COLUMNAS ====================
+
+    const columnas = [
+      "#",
+      "Cliente",
+      "Hab.",
+      "Tipo",
+      "Empleado",
+      "Turno",
+      "Monto",
+      "Fecha",
+    ];
+
+    // ==================== FILAS ====================
+
+    const filas = ventasFiltradas.map((v, index) => [
+      index + 1,
+
+      `${v.reservaciones?.clientes?.nombre || ""} ${v.reservaciones?.clientes?.apellido || ""}`,
+
+      v.reservaciones?.habitaciones?.numero || "—",
+
+      v.reservaciones?.habitaciones?.tipo || "—",
+
+      v.empleados?.nombre || "—",
+
+      v.empleados?.tipo_turno === "dia" ? "Día" : "Noche",
+
+      `C$ ${parseFloat(v.monto || 0).toFixed(2)}`,
+
+      v.fecha ? new Date(v.fecha).toLocaleDateString() : "S/F",
+    ]);
+
+    // ==================== TABLA ====================
+
+    autoTable(doc, {
+      head: [columnas],
+
+      body: filas,
+
+      startY: 50,
+
+      theme: "grid",
+
+      headStyles: {
+        fillColor: [44, 108, 98],
+        textColor: [255, 255, 255],
+        fontStyle: "bold",
+        halign: "center",
+      },
+
+      styles: {
+        fontSize: 9,
+        cellPadding: 3,
+        valign: "middle",
+      },
+
+      alternateRowStyles: {
+        fillColor: [245, 245, 245],
+      },
+
+      didDrawPage: () => {
+        // TOTAL GENERAL
+
+        doc.setFontSize(11);
+
+        doc.setTextColor(44, 108, 98);
+
+        doc.text(
+          `Total General: C$ ${totalCalculado.toLocaleString("en-US", {
+            minimumFractionDigits: 2,
+          })}`,
+          14,
+          doc.internal.pageSize.getHeight() - 10,
+        );
+      },
+    });
+
+    // ==================== GUARDAR ====================
+
+    const fecha = new Date().toISOString().split("T")[0];
+
+    doc.save(`Reporte_Ventas_${fecha}.pdf`);
+  };
+
+  // ==================== TOTAL ====================
+
+  const totalCalculado = ventasFiltradas.reduce(
+    (acc, v) => acc + parseFloat(v.monto || 0),
+    0,
+  );
+
+  // ==================== USE EFFECT ====================
+
   useEffect(() => {
     cargarDatos();
   }, []);
 
-return (
-  <Container fluid className="mt-5 px-4">
-    <Row>
-      {/* PANEL IZQUIERDO */}
-      <Col lg={3}>
-        <FormularioVenta
-          nuevaVenta={nuevaVenta}
-          setNuevaVenta={setNuevaVenta}
-          agregarVenta={agregarVenta}
-          reservaciones={reservaciones}
-          empleados={empleados}
-        />
+  // ==================== RETURN ====================
 
-        <Card
-          className="border-0 shadow-sm mt-3"
-          style={{ borderRadius: "12px" }}
-        >
-          <Card.Body className="d-flex justify-content-between align-items-center">
-            <span className="fw-bold text-muted">Total General:</span>
-            <h4
-              className="fw-bold mb-0"
-              style={{ color: "#1a9a69" }}
+  return (
+    <Container fluid className="mt-5 px-4">
+      <Row>
+        {/* PANEL IZQUIERDO */}
+
+        <Col lg={3}>
+          <FormularioVenta
+            nuevaVenta={nuevaVenta}
+            setNuevaVenta={setNuevaVenta}
+            agregarVenta={manejarAgregarVenta}
+            reservaciones={reservaciones}
+            empleados={empleados}
+          />
+        </Col>
+
+        {/* PANEL DERECHO */}
+
+        <Col lg={9}>
+          {/* BUSCADOR */}
+
+          <Row className="mb-4 align-items-center gy-3">
+            <Col md={6}>
+              <CuadroBusquedas
+                textoBusqueda={textoBusqueda}
+                manejarCambioBusqueda={(e) => setTextoBusqueda(e.target.value)}
+              />
+            </Col>
+
+            <Col
+              md={6}
+              className="
+                  d-flex
+                  justify-content-md-end
+                  gap-2
+                  mt-2
+                  mt-md-0
+                  flex-wrap
+                "
             >
-              C${" "}
-              {ventasFiltradas
-                .reduce((acc, v) => acc + parseFloat(v.monto || 0), 0)
-                .toLocaleString("en-US", {
-                  minimumFractionDigits: 2,
-                })}
-            </h4>
-          </Card.Body>
-        </Card>
+              {/* PDF GENERAL */}
 
-        <Button
-          variant="outline-danger"
-          className="w-100 mt-3 shadow-sm"
-          style={{ padding: "10px" }}
-          onClick={generarPDFVentas}
-        >
-          <i className="bi bi-file-earmark-pdf me-2"></i>
-          Descargar Reporte PDF
-        </Button>
+              <Button variant="outline-danger" onClick={generarPDFVentas}>
+                <i className="bi bi-file-earmark-pdf me-2"></i>
+                Reporte
+              </Button>
 
-        <Button
-          className="w-100 mt-3 border-0"
-          style={{
-            backgroundColor: "#2c6c62",
-            padding: "10px",
-          }}
-          onClick={() => setMostrarChatModal(true)}
-        >
-          <i className="bi bi-robot me-2"></i>
-          Consultar con IA
-        </Button>
-      </Col>
+              {/* IA */}
 
-      {/* PANEL DERECHO */}
-      <Col lg={9}>
-        <Row className="my-4">
-          <Col md={6}>
-            <CuadroBusquedas
-              textoBusqueda={textoBusqueda}
-              manejarCambioBusqueda={manejarBusqueda}
-            />
-          </Col>
-        </Row>
+              <Button
+                className="border-0"
+                style={{
+                  backgroundColor: "#2c6c62",
+                }}
+                onClick={() => setMostrarChatModal(true)}
+              >
+                <i className="bi bi-robot me-2"></i>
+                Consultar IA
+              </Button>
+            </Col>
+          </Row>
 
-          {/* ==================== TABLA PC ==================== */}
+          {/* ==================== TABLA ==================== */}
 
           <div
-          className="bg-white p-0 rounded shadow-sm border overflow-hidden d-none d-md-block"
-          style={{ borderRadius: "12px" }}
-        >
-          <Table hover responsive className="align-middle mb-0">
-            <thead className="table-light">
-              <tr
-                className="small text-uppercase text-muted"
-                style={{ fontSize: "0.75rem" }}
+            className="
+              bg-white
+              rounded
+              shadow-sm
+              border
+              overflow-hidden
+              d-none
+              d-md-block
+            "
+          >
+            <Table hover responsive className="align-middle mb-0 text-center">
+              {/* HEADER */}
+
+              <thead
+                className="
+                  table-light
+                  small
+                  text-muted
+                "
               >
-                <th className="ps-3">ID</th>
-                <th>CLIENTE</th>
-                <th className="text-center">HAB</th>
-                <th>EMPLEADO</th>
-                <th>TURNO</th>
-                <th>MONTO</th>
-                <th>FECHA</th>
-                <th className="text-center">ACCIONES</th>
-              </tr>
-            </thead>
-
-            <tbody className="small">
-              {cargando ? (
                 <tr>
-                  <td colSpan="8" className="text-center py-5">
-                    <Spinner
-                      animation="border"
-                      variant="primary"
-                      size="sm"
-                      className="me-2"
-                    />
-                    <span className="text-muted">Cargando registros...</span>
-                  </td>
+                  <th>#</th>
+
+                  <th className="text-start">Clientes</th>
+                  <th>Habitaciones</th>
+                  <th>Tipos</th>
+                  <th>Empleados</th>
+                  <th>Turnos</th>
+                  <th>Montos</th>
+                  <th>Fechas</th>
+                  <th>ACCIONES</th>
                 </tr>
-              ) : ventasFiltradas.length === 0 ? (
-                <tr>
-                  <td colSpan="8" className="text-center py-5 text-muted">
-                    No se encontraron ventas registradas.
-                  </td>
-                </tr>
-              ) : (
-                ventasFiltradas.map((v, index) => (
-                  <tr key={v.id_venta || index}>
-                    <td className="ps-3 fw-bold text-muted">{index + 1}</td>
-                    
-                    {/* MODIFICACIÓN: Mostrar Nombre y Apellido */}
-                    <td className="fw-semibold">
-                      {v.reservaciones?.clientes 
-                        ? `${v.reservaciones.clientes.nombre} ${v.reservaciones.clientes.apellido || ""}` 
-                        : "N/A"}
-                    </td>
+              </thead>
 
-                    <td className="text-center">
-                      <Badge bg="light" text="dark" className="border">
-                        {v.reservaciones?.habitaciones?.numero || "—"}
-                      </Badge>
-                    </td>
+              {/* BODY */}
 
-                    <td>{v.empleados?.nombre || "No asignado"}</td>
-
-                    <td>
-                      <span
-                        className="badge px-3 py-2"
-                        style={{
-                          backgroundColor: v.empleados?.tipo_turno === "dia" ? "#59cbcb" : "#faec8e",
-                          color: v.empleados?.tipo_turno === "dia" ? "#065f46" : "#991b1b",
-                          borderRadius: "10px",
-                          fontSize: "0.75rem",
-                          fontWeight: "600",
-                        }}
-                      >
-                        {v.empleados?.tipo_turno === "dia" ? "Día" : "Noche"}
-                      </span>
-                    </td>
-
-                    <td className="fw-bold text-success">
-                      C$ {parseFloat(v.monto || 0).toFixed(2)}
-                    </td>
-
-                    <td className="text-muted">
-                      {v.fecha ? new Date(v.fecha).toLocaleDateString() : "S/F"}
-                    </td>
-
-                    <td className="text-center">
-                      <Button
-                        variant="link"
-                        className="text-warning p-1 me-2"
-                        onClick={() => {
-                          setVentaSeleccionada(v);
-                          setShowEditar(true);
-                        }}
-                      >
-                        <i className="bi bi-pencil-square fs-5"></i>
-                      </Button>
-
-                      <Button
-                        variant="link"
-                        className="text-danger p-1"
-                        onClick={() => {
-                          setVentaSeleccionada(v);
-                          setShowEliminar(true);
-                        }}
-                      >
-                        <i className="bi bi-trash3 fs-5"></i>
-                      </Button>
+              <tbody className="small">
+                {cargando ? (
+                  <tr>
+                    <td colSpan="9">
+                      <Spinner animation="border" size="sm" />
                     </td>
                   </tr>
-                ))
-              )}
-            </tbody>
-          </Table>
-        </div>
+                ) : ventasFiltradas.length === 0 ? (
+                  <tr>
+                    <td colSpan="9" className="py-5 text-muted">
+                      No hay ventas registradas
+                    </td>
+                  </tr>
+                ) : (
+                  ventasFiltradas.map((v, index) => (
+                    <tr key={v.id_venta}>
+                      {/* ID */}
 
-          {/* ==================== TARJETAS MOBILE ==================== */}
+                      <td>{index + 1}</td>
 
-         <div className="d-block d-md-none">
-          {cargando ? (
-            <div className="text-center py-5">
-              <Spinner animation="border" variant="primary" />
-            </div>
-          ) : ventasFiltradas.length === 0 ? (
-            <div className="text-center text-muted py-5">
-              No hay ventas registradas
-            </div>
-          ) : (
-            ventasFiltradas.map((v, index) => (
+                      {/* CLIENTE */}
+
+                      <td className="text-start fw-semibold">
+                        {v.reservaciones?.clientes?.nombre}{" "}
+                        {v.reservaciones?.clientes?.apellido}
+                      </td>
+
+                      {/* HAB */}
+
+                      <td>
+                        <Badge bg="light" text="dark">
+                          {v.reservaciones?.habitaciones?.numero}
+                        </Badge>
+                      </td>
+
+                      {/* TIPO */}
+
+                      <td className="text-muted small">
+                        {v.reservaciones?.habitaciones?.tipo}
+                      </td>
+
+                      {/* EMPLEADO */}
+
+                      <td>{v.empleados?.nombre}</td>
+
+                      {/* TURNO */}
+
+                      <td>
+                        <span
+                          className="badge px-3 py-2"
+                          style={{
+                            backgroundColor:
+                              v.empleados?.tipo_turno === "dia"
+                                ? "#faec8e"
+                                : "#59cbcb",
+
+                            color:
+                              v.empleados?.tipo_turno === "dia"
+                                ? "#231717"
+                                : "#fbfbfb",
+
+                            borderRadius: "10px",
+                            fontSize: "0.75rem",
+                            fontWeight: "600",
+                          }}
+                        >
+                          {v.empleados?.tipo_turno === "dia" ? "Día" : "Noche"}
+                        </span>
+                      </td>
+
+                      {/* MONTO */}
+
+                      <td className="fw-bold text-success">
+                        C$ {parseFloat(v.monto || 0).toFixed(2)}
+                      </td>
+
+                      {/* FECHA */}
+
+                      <td className="text-muted">
+                        {v.fecha
+                          ? new Date(v.fecha).toLocaleDateString()
+                          : "S/F"}
+                      </td>
+
+                      {/* ACCIONES */}
+
+                      <td>
+                        {/* PDF */}
+
+                        <Button
+                          variant="link"
+                          className="text-danger p-1"
+                          onClick={() => generarPDFIndividual(v)}
+                        >
+                          <i className="bi bi-file-earmark-pdf fs-5"></i>
+                        </Button>
+
+                        {/* EDITAR */}
+
+                        <Button
+                          variant="link"
+                          className="text-warning p-1"
+                          onClick={() => {
+                            setVentaSeleccionada(v);
+                            setShowEditar(true);
+                          }}
+                        >
+                          <i className="bi bi-pencil-square fs-5"></i>
+                        </Button>
+
+                        {/* ELIMINAR */}
+
+                        <Button
+                          variant="link"
+                          className="text-danger p-1"
+                          onClick={() => {
+                            setVentaSeleccionada(v);
+                            setShowEliminar(true);
+                          }}
+                        >
+                          <i className="bi bi-trash3 fs-5"></i>
+                        </Button>
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+
+              {/* FOOTER */}
+
+              <tfoot className="table-light fw-bold">
+                <tr>
+                  <td colSpan="6" className="text-end">
+                    TOTAL GENERAL:
+                  </td>
+
+                  <td className="text-success">
+                    C${" "}
+                    {totalCalculado.toLocaleString("en-US", {
+                      minimumFractionDigits: 2,
+                    })}
+                  </td>
+
+                  <td></td>
+
+                  <td></td>
+                </tr>
+              </tfoot>
+            </Table>
+          </div>
+
+          {/* ==================== MOBILE ==================== */}
+
+          <div className="d-block d-md-none">
+            {ventasFiltradas.map((v, index) => (
               <TarjetaVenta
-                key={v.id_venta || index}
+                key={v.id_venta}
                 v={v}
                 index={index}
-                setVentaSeleccionada={setVentaSeleccionada}
                 setShowEditar={setShowEditar}
                 setShowEliminar={setShowEliminar}
+                setVentaSeleccionada={setVentaSeleccionada}
+                generarPDFIndividual={generarPDFIndividual}
               />
-            ))
-          )}
-        </div>
-      </Col>
-    </Row>
+            ))}
+          </div>
+        </Col>
+      </Row>
 
       {/* ==================== MODALES ==================== */}
+
+      <ModalEliminarVenta
+        show={showEliminar}
+        onHide={() => setShowEliminar(false)}
+        ventaSeleccionada={ventaSeleccionada}
+        eliminarVenta={manejarEliminarVenta}
+      />
 
       <ModalEdicionVenta
         show={showEditar}
         onHide={() => setShowEditar(false)}
         ventaSeleccionada={ventaSeleccionada}
         setVentaSeleccionada={setVentaSeleccionada}
-        actualizarVenta={actualizarVenta}
+        actualizarVenta={manejarActualizarVenta}
       />
 
-      <ModalEliminarVenta
-        show={showEliminar}
-        onHide={() => setShowEliminar(false)}
-        ventaSeleccionada={ventaSeleccionada}
-        eliminarVenta={eliminarVenta}
+      {/* CHAT IA */}
+
+      <ChatIA
+        mostrarChatModal={mostrarChatModal}
+        setMostrarChatModal={setMostrarChatModal}
       />
+
+      {/* TOAST */}
 
       <NotificacionOperacion
         {...toast}
@@ -517,14 +762,8 @@ return (
           })
         }
       />
-
-      <ChatIA
-        mostrarChatModal={mostrarChatModal}
-        setMostrarChatModal={setMostrarChatModal}
-      />
     </Container>
   );
 };
 
 export default Ventas;
-

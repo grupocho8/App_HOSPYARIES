@@ -1,12 +1,17 @@
 import React from "react";
 import { Modal, Button, Form } from "react-bootstrap";
 
-const ModalEdicionVenta = ({ show, onHide, ventaSeleccionada, setVentaSeleccionada, actualizarVenta }) => {
-  
+const ModalEdicionVenta = ({
+  show,
+  onHide,
+  ventaSeleccionada,
+  setVentaSeleccionada,
+  actualizarVenta,
+}) => {
   const manejarCambio = (e) => {
     setVentaSeleccionada({
       ...ventaSeleccionada,
-      monto: e.target.value
+      monto: e.target.value,
     });
   };
 
@@ -15,18 +20,30 @@ const ModalEdicionVenta = ({ show, onHide, ventaSeleccionada, setVentaSelecciona
       <Modal.Header closeButton className="border-0">
         <Modal.Title className="fw-bold">Editar Venta</Modal.Title>
       </Modal.Header>
+
       <Modal.Body>
         <Form>
+          {/* CLIENTE */}
           <Form.Group className="mb-3">
-            <Form.Label className="small fw-bold text-muted">CLIENTE</Form.Label>
-            <Form.Control 
-              type="text" 
-              disabled 
-              value={ventaSeleccionada?.reservaciones?.clientes?.nombre || ""} 
+            <Form.Label className="small fw-bold text-muted">
+              CLIENTE
+            </Form.Label>
+
+            <Form.Control
+              type="text"
+              disabled
+              value={
+                ventaSeleccionada?.reservaciones?.clientes
+                  ? `${ventaSeleccionada.reservaciones.clientes.nombre} ${ventaSeleccionada.reservaciones.clientes.apellido || ""}`
+                  : ""
+              }
             />
           </Form.Group>
+
+          {/* MONTO */}
           <Form.Group className="mb-3">
             <Form.Label className="small fw-bold">NUEVO MONTO (C$)</Form.Label>
+
             <Form.Control
               type="number"
               step="0.01"
@@ -37,8 +54,12 @@ const ModalEdicionVenta = ({ show, onHide, ventaSeleccionada, setVentaSelecciona
           </Form.Group>
         </Form>
       </Modal.Body>
+
       <Modal.Footer className="border-0">
-        <Button variant="light" onClick={onHide}>Cancelar</Button>
+        <Button variant="light" onClick={onHide}>
+          Cancelar
+        </Button>
+
         <Button className="color-navbar border-0" onClick={actualizarVenta}>
           Guardar Cambios
         </Button>

@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from "react";
-import { Card, Row, Col, Spinner, Button, Badge } from "react-bootstrap";
+import { Card, Row, Col, Spinner, Button } from "react-bootstrap";
 import "bootstrap-icons/font/bootstrap-icons.css";
 
 const TarjetaEmpleados = ({
@@ -20,6 +20,7 @@ const TarjetaEmpleados = ({
 
   useEffect(() => {
     window.addEventListener("keydown", manejarTeclaEscape);
+
     return () => window.removeEventListener("keydown", manejarTeclaEscape);
   }, [manejarTeclaEscape]);
 
@@ -32,6 +33,7 @@ const TarjetaEmpleados = ({
       {cargando ? (
         <div className="text-center py-5">
           <h5>Cargando empleados...</h5>
+
           <Spinner animation="border" variant="primary" role="status" />
         </div>
       ) : (
@@ -49,96 +51,146 @@ const TarjetaEmpleados = ({
                 className="mb-4"
               >
                 <Card
-                  className={`tarjeta-cliente-contenedor border-0 rounded-3 shadow-sm h-100 ${
-                    tarjetaActiva ? "tarjeta-cliente-activa" : ""
-                  }`}
-                  onClick={() => alternarTarjetaActiva(empleado.id_empleado)}
-                  tabIndex={0}
-                  onKeyDown={(evento) => {
-                    if (evento.key === "Enter" || evento.key === " ") {
-                      evento.preventDefault();
-                      alternarTarjetaActiva(empleado.id_empleado);
-                    }
+                  className="
+                    border-0
+                    shadow-sm
+                    h-100
+                    overflow-hidden
+                  "
+                  style={{
+                    borderRadius: "18px",
+                    cursor: "pointer",
+                    transition: "0.3s",
                   }}
+                  onMouseEnter={() => setIdTarjetaActiva(empleado.id_empleado)}
+                  onMouseLeave={() => setIdTarjetaActiva(null)}
+                  tabIndex={0}
                 >
-                  <div className="tarjeta-cliente-imagen">
-                    <i className="bi bi-person-badge"></i>
-                  </div>
-
-                  <Card.Body className="tarjeta-cliente-cuerpo p-3">
-                    <Card.Title className="fw-semibold text-truncate">
-                      {empleado.nombre}
-                    </Card.Title>
-
-                    <Card.Text className="text-muted small">
-                      <strong>Rol:</strong> {empleado.rol}
-                      <br />
-                      <strong>Usuario:</strong> {empleado.usuario}
-                      <br />
-
-                      {/* ✅ NUEVO: TURNO */}
-                      <strong>Turno:</strong>{" "}
-                  <span
-                    className="badge px-2 py-1"
+                  <Card.Body
                     style={{
-                      backgroundColor:
-                        empleado.tipo_turno === "dia"
-                          ? "#59cbcb"
-                          : "#faec8e",
-
-                      color:
-                        empleado.tipo_turno === "dia"
-                          ? "#ffffff"
-                          : "#5c4b00",
-
-                      borderRadius: "8px",
-                      fontSize: "0.70rem",
-                      fontWeight: "600",
+                      position: "relative",
                     }}
                   >
-                    {empleado.tipo_turno === "dia"
-                      ? "Día"
-                      : "Noche"}
-                  </span>
-                    </Card.Text>
-                  </Card.Body>
+                    {/* CONTENIDO */}
 
-                  {tarjetaActiva && (
-                    <div
-                      className="tarjeta-cliente-capa"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setIdTarjetaActiva(null);
-                      }}
-                    >
+                    <Row className="align-items-center">
+                      <Col xs={3}>
+                        <div
+                          className="
+                            bg-light
+                            rounded-circle
+                            d-flex
+                            align-items-center
+                            justify-content-center
+                          "
+                          style={{
+                            width: "50px",
+                            height: "50px",
+                          }}
+                        >
+                          <i
+                            className="
+                              bi-person-badge-fill
+                              text-dark
+                              fs-3
+                            "
+                          ></i>
+                        </div>
+                      </Col>
+
+                      <Col xs={9}>
+                        <div className="fw-bold text-truncate">
+                          {empleado.nombre}
+                        </div>
+
+                        <div className="small text-muted">
+                          {empleado.usuario}
+                        </div>
+
+                        <div className="small text-muted">{empleado.rol}</div>
+
+                        {/* TURNO */}
+
+                        <div className="mt-1">
+                          <span
+                            className="badge px-2 py-1"
+                            style={{
+                              backgroundColor:
+                                empleado.tipo_turno === "dia"
+                                  ? "#faec8e"
+                                  : "#59cbcb",
+
+                              color:
+                                empleado.tipo_turno === "dia"
+                                  ? "#231717"
+                                  : "#fbfbfb",
+
+                              borderRadius: "8px",
+                              fontSize: "0.70rem",
+                              fontWeight: "600",
+                            }}
+                          >
+                            {empleado.tipo_turno === "dia" ? "Día" : "Noche"}
+                          </span>
+                        </div>
+                      </Col>
+                    </Row>
+
+                    {/* CAPA OSCURA */}
+
+                    {tarjetaActiva && (
                       <div
-                        className="d-flex gap-2"
-                        onClick={(e) => e.stopPropagation()}
-                      >
-                        <Button
-                          variant="outline-warning"
-                          size="sm"
-                          onClick={() => {
-                            abrirModalEdicion(empleado);
-                            setIdTarjetaActiva(null);
-                          }}
-                        >
-                          <i className="bi bi-pencil"></i>
-                        </Button>
+                        className="
+                          d-flex
+                          gap-2
+                          justify-content-center
+                          align-items-center
+                          rounded-3
+                        "
+                        style={{
+                          position: "absolute",
+                          top: 0,
+                          left: 0,
+                          width: "100%",
+                          height: "100%",
+                          background: "rgba(0,0,0,0.6)",
+                          zIndex: 10,
+                        }}
+                        onClick={(e) => {
+                          e.stopPropagation();
 
-                        <Button
-                          variant="outline-danger"
-                          size="sm"
-                          onClick={() => {
-                            abrirModalEliminacion(empleado);
-                            setIdTarjetaActiva(null);
-                          }}
+                          setIdTarjetaActiva(null);
+                        }}
+                      >
+                        <div
+                          className="d-flex gap-2"
+                          onClick={(e) => e.stopPropagation()}
                         >
-                          <i className="bi bi-trash"></i>
-                        </Button>
+                          <Button
+                            variant="warning"
+                            onClick={() => {
+                              abrirModalEdicion(empleado);
+
+                              setIdTarjetaActiva(null);
+                            }}
+                          >
+                            <i className="bi bi-pencil"></i>
+                          </Button>
+
+                          <Button
+                            variant="danger"
+                            onClick={() => {
+                              abrirModalEliminacion(empleado);
+
+                              setIdTarjetaActiva(null);
+                            }}
+                          >
+                            <i className="bi bi-trash"></i>
+                          </Button>
+                        </div>
                       </div>
-                    </div>
-                  )}
+                    )}
+                  </Card.Body>
                 </Card>
               </Col>
             );

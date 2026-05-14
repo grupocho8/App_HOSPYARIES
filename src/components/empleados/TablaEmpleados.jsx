@@ -49,13 +49,13 @@ const TablaEmpleados = ({
                     style={{
                       backgroundColor:
                         empleado.tipo_turno === "dia"
-                          ? "#59cbcb"
-                          : "#faec8e",
+                        ? "#faec8e"
+                        : "#59cbcb",
 
                       color:
                         empleado.tipo_turno === "dia"
-                          ? "#ffffff"
-                          : "#5c4b00",
+                          ? "#231717"
+                          : "#fbfbfb",
 
                       borderRadius: "10px",
                       fontSize: "0.75rem",

@@ -22,19 +22,16 @@ const TarjetaCliente = ({
 
   useEffect(() => {
     window.addEventListener("keydown", manejarTeclaEscape);
+
     return () => window.removeEventListener("keydown", manejarTeclaEscape);
   }, [manejarTeclaEscape]);
-
-  // Alternar tarjeta activa al hacer clic
-  const alternarTarjetaActiva = (id) => {
-    setIdTarjetaActiva((anterior) => (anterior === id ? null : id));
-  };
 
   return (
     <>
       {cargando ? (
         <div className="text-center py-5">
           <h5>Cargando clientes...</h5>
+
           <Spinner animation="border" variant="primary" role="status" />
         </div>
       ) : (
@@ -52,72 +49,123 @@ const TarjetaCliente = ({
                 className="mb-4"
               >
                 <Card
-                  className={`tarjeta-cliente-contenedor border-0 rounded-3 shadow-sm h-100 ${
-                    tarjetaActiva ? "tarjeta-cliente-activa" : ""
-                  }`}
-                  onClick={() => alternarTarjetaActiva(cliente.id_cliente)}
-                  tabIndex={0}
-                  onKeyDown={(evento) => {
-                    if (evento.key === "Enter" || evento.key === " ") {
-                      evento.preventDefault();
-                      alternarTarjetaActiva(cliente.id_cliente);
-                    }
+                  className="
+                    border-0
+                    shadow-sm
+                    h-100
+                    overflow-hidden
+                  "
+                  style={{
+                    borderRadius: "18px",
+                    cursor: "pointer",
+                    transition: "0.3s",
                   }}
+                  onMouseEnter={() => setIdTarjetaActiva(cliente.id_cliente)}
+                  onMouseLeave={() => setIdTarjetaActiva(null)}
+                  tabIndex={0}
                 >
-                  <div className="tarjeta-cliente-imagen">
-                    <i className="bi bi-person-circle"></i>
-                  </div>
+                  <Card.Body
+                    style={{
+                      position: "relative",
+                    }}
+                  >
+                    {/* CONTENIDO */}
 
-                  <Card.Body className="tarjeta-cliente-cuerpo p-3">
-                    <Card.Title className="fw-semibold text-truncate">
-                      {cliente.nombre} {cliente.apellido}
-                    </Card.Title>
+                    <Row className="align-items-center">
+                      <Col xs={3}>
+                        <div
+                          className="
+                            bg-light
+                            rounded-circle
+                            d-flex
+                            align-items-center
+                            justify-content-center
+                          "
+                          style={{
+                            width: "50px",
+                            height: "50px",
+                          }}
+                        >
+                          <i
+                            className="
+                              bi-person-fill
+                              text-dark
+                              fs-3
+                            "
+                          ></i>
+                        </div>
+                      </Col>
 
-                    <Card.Text className="text-muted small">
-                      <strong>Cédula:</strong> {cliente.cedula}
-                      <br />
-                      <strong>Registrado:</strong>{" "}
-                      {new Date(cliente.fecha_registro).toLocaleDateString("es-NI")}
-                    </Card.Text>
-                  </Card.Body>
+                      <Col xs={9}>
+                        <div className="fw-bold text-truncate">
+                          {cliente.nombre} {cliente.apellido}
+                        </div>
 
-                  {/* Capa con botones que aparece al activar la tarjeta */}
-                  {tarjetaActiva && (
-                    <div
-                      className="tarjeta-cliente-capa"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setIdTarjetaActiva(null);
-                      }}
-                    >
+                        <div className="small text-muted">{cliente.cedula}</div>
+
+                        <div className="small text-muted">
+                          {new Date(cliente.fecha_registro).toLocaleDateString(
+                            "es-NI",
+                          )}
+                        </div>
+                      </Col>
+                    </Row>
+
+                    {/* CAPA OSCURA */}
+
+                    {tarjetaActiva && (
                       <div
-                        className="d-flex gap-2"
-                        onClick={(e) => e.stopPropagation()}
-                      >
-                        <Button
-                          variant="outline-warning"
-                          size="sm"
-                          onClick={() => {
-                            abrirModalEdicion(cliente);
-                            setIdTarjetaActiva(null);
-                          }}
-                        >
-                          <i className="bi bi-pencil"></i>
-                        </Button>
+                        className="
+                          d-flex
+                          gap-2
+                          justify-content-center
+                          align-items-center
+                          rounded-3
+                        "
+                        style={{
+                          position: "absolute",
+                          top: 0,
+                          left: 0,
+                          width: "100%",
+                          height: "100%",
+                          background: "rgba(0,0,0,0.6)",
+                          zIndex: 10,
+                        }}
+                        onClick={(e) => {
+                          e.stopPropagation();
 
-                        <Button
-                          variant="outline-danger"
-                          size="sm"
-                          onClick={() => {
-                            abrirModalEliminacion(cliente);
-                            setIdTarjetaActiva(null);
-                          }}
+                          setIdTarjetaActiva(null);
+                        }}
+                      >
+                        <div
+                          className="d-flex gap-2"
+                          onClick={(e) => e.stopPropagation()}
                         >
-                          <i className="bi bi-trash"></i>
-                        </Button>
+                          <Button
+                            variant="warning"
+                            onClick={() => {
+                              abrirModalEdicion(cliente);
+
+                              setIdTarjetaActiva(null);
+                            }}
+                          >
+                            <i className="bi bi-pencil"></i>
+                          </Button>
+
+                          <Button
+                            variant="danger"
+                            onClick={() => {
+                              abrirModalEliminacion(cliente);
+
+                              setIdTarjetaActiva(null);
+                            }}
+                          >
+                            <i className="bi bi-trash"></i>
+                          </Button>
+                        </div>
                       </div>
-                    </div>
-                  )}
+                    )}
+                  </Card.Body>
                 </Card>
               </Col>
             );
