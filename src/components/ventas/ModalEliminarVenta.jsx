@@ -8,32 +8,71 @@ const ModalEliminarVenta = ({
   eliminarVenta,
 }) => {
   return (
-    <Modal show={show} onHide={onHide} centered size="sm">
-      <Modal.Header closeButton className="border-0"></Modal.Header>
+    <Modal
+      show={show}
+      onHide={onHide}
+      centered
+      size="sm"
+      backdrop="static"
+      keyboard={false}
+    >
+      <Modal.Header closeButton>
+        <Modal.Title>Eliminar Venta</Modal.Title>
+      </Modal.Header>
 
-      <Modal.Body className="text-center">
-        <i className="bi bi-exclamation-triangle text-danger fs-1 mb-3"></i>
+      <Modal.Body className="text-center py-3">
+        <div className="mb-3">
+          <i
+            className="bi bi-exclamation-triangle-fill"
+            style={{
+              fontSize: "3rem",
+              color: "#dc3545",
+            }}
+          ></i>
+        </div>
 
-        <h5 className="fw-bold">¿Eliminar registro?</h5>
+        <h5 className="fw-bold mb-3">¿Eliminar registro?</h5>
 
-        <p className="text-muted small">
-          Esta acción no se puede deshacer. Se eliminará la venta de
+        <p className="text-muted mb-0">Esta acción no se puede deshacer.</p>
+
+        <p className="text-muted">
+          Se eliminará la venta de
           <strong>
             {" "}
             {ventaSeleccionada?.reservaciones?.clientes
-              ? `${ventaSeleccionada.reservaciones.clientes.nombre} ${ventaSeleccionada.reservaciones.clientes.apellido || ""}`
+              ? `${ventaSeleccionada.reservaciones.clientes.nombre} ${
+                  ventaSeleccionada.reservaciones.clientes.apellido || ""
+                }`
               : ""}
           </strong>
         </p>
       </Modal.Body>
 
-      <Modal.Footer className="border-0 d-flex justify-content-center">
-        <Button variant="light" onClick={onHide}>
-          No, cancelar
+      <Modal.Footer>
+        {/* CANCELAR */}
+        <Button
+          variant="secondary"
+          onClick={onHide}
+          className="border-0"
+          style={{
+            borderRadius: "10px",
+            minWidth: "120px",
+          }}
+        >
+          Cancelar
         </Button>
 
-        <Button variant="danger" onClick={eliminarVenta}>
-          Sí, eliminar
+        {/* ELIMINAR */}
+        <Button
+          variant="danger"
+          onClick={eliminarVenta}
+          className="border-0"
+          style={{
+            borderRadius: "10px",
+            minWidth: "120px",
+          }}
+        >
+          Eliminar
         </Button>
       </Modal.Footer>
     </Modal>

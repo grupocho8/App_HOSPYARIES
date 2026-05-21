@@ -163,8 +163,20 @@ const Clientes = () => {
         </Col>
 
         <Col xs={3} sm={5} md={5} lg={5} className="text-end">
-          <Button onClick={() => setMostrarModal(true)} className="color-navbar border-0">
-            Nuevo Cliente
+          <Button
+            onClick={() =>
+              setMostrarModal(
+                true
+              )
+            }
+            size="md"
+            className="color-navbar border-0"
+          >
+            <i className="bi-plus-lg"></i>
+
+            <span className="d-none d-sm-inline ms-2">
+              Nuevo Cliente
+            </span>
           </Button>
         </Col>
       </Row>

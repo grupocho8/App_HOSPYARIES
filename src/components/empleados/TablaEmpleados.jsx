@@ -1,4 +1,3 @@
-
 import React from "react";
 import { Table, Button } from "react-bootstrap";
 import "bootstrap-icons/font/bootstrap-icons.css";
@@ -7,6 +6,8 @@ const TablaEmpleados = ({
   empleados,
   abrirModalEdicion,
   abrirModalEliminacion,
+  paginaActual, // ✅ NUEVO
+  registrosPorPagina, // ✅ NUEVO
 }) => {
   return (
     <>
@@ -22,9 +23,9 @@ const TablaEmpleados = ({
           <thead>
             <tr>
               <th>#</th>
-              <th>Nombre</th>
-              <th>Rol</th>
-              <th>Usuario</th>
+              <th>Nombre Completo</th>
+              <th>Email</th>
+              <th>Tipo Empleado</th>
               <th>Turno</th>
               <th className="text-center">Acciones</th>
             </tr>
@@ -33,39 +34,44 @@ const TablaEmpleados = ({
           <tbody>
             {empleados.map((empleado, index) => (
               <tr key={empleado.id_empleado}>
-                <td>{index + 1}</td>
+                {/* ✅ NUMERACIÓN CON PAGINACIÓN */}
+                <td>{(paginaActual - 1) * registrosPorPagina + index + 1}</td>
 
                 <td className="fw-semibold">
-                  {empleado.nombre}
+                  {empleado.nombre_empleado} {empleado.apellido_empleado || ""}
                 </td>
 
-                <td>{empleado.rol}</td>
-
-                <td>{empleado.usuario}</td>
+                <td>{empleado.email}</td>
 
                 <td>
-                  <span
-                    className="badge px-3 py-2"
-                    style={{
-                      backgroundColor:
-                        empleado.tipo_turno === "dia"
-                        ? "#faec8e"
-                        : "#59cbcb",
+                  {empleado.tipo_empleado === "administrador"
+                    ? "Administrador"
+                    : "Recepcionista"}
+                </td>
 
-                      color:
-                        empleado.tipo_turno === "dia"
-                          ? "#231717"
-                          : "#fbfbfb",
+                <td>
+                  {empleado.tipo_turno ? (
+                    <span
+                      className="badge px-3 py-2"
+                      style={{
+                        backgroundColor:
+                          empleado.tipo_turno === "dia" ? "#faec8e" : "#59cbcb",
 
-                      borderRadius: "10px",
-                      fontSize: "0.75rem",
-                      fontWeight: "600",
-                    }}
-                  >
-                    {empleado.tipo_turno === "dia"
-                      ? "Día"
-                      : "Noche"}
-                  </span>
+                        color:
+                          empleado.tipo_turno === "dia" ? "#231717" : "#fbfbfb",
+
+                        borderRadius: "10px",
+
+                        fontSize: "0.75rem",
+
+                        fontWeight: "600",
+                      }}
+                    >
+                      {empleado.tipo_turno === "dia" ? "Día" : "Noche"}
+                    </span>
+                  ) : (
+                    <span className="text-muted">No aplica</span>
+                  )}
                 </td>
 
                 <td className="text-center">
@@ -73,9 +79,7 @@ const TablaEmpleados = ({
                     variant="outline-warning"
                     size="sm"
                     className="me-1"
-                    onClick={() =>
-                      abrirModalEdicion(empleado)
-                    }
+                    onClick={() => abrirModalEdicion(empleado)}
                   >
                     <i className="bi bi-pencil"></i>
                   </Button>
@@ -83,9 +87,7 @@ const TablaEmpleados = ({
                   <Button
                     variant="outline-danger"
                     size="sm"
-                    onClick={() =>
-                      abrirModalEliminacion(empleado)
-                    }
+                    onClick={() => abrirModalEliminacion(empleado)}
                   >
                     <i className="bi bi-trash"></i>
                   </Button>
@@ -106,4 +108,3 @@ const TablaEmpleados = ({
 };
 
 export default TablaEmpleados;
-

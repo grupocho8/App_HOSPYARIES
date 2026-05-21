@@ -8,6 +8,7 @@ const TarjetaEmpleados = ({
   abrirModalEliminacion,
 }) => {
   const [cargando, setCargando] = useState(true);
+
   const [idTarjetaActiva, setIdTarjetaActiva] = useState(null);
 
   useEffect(() => {
@@ -15,7 +16,9 @@ const TarjetaEmpleados = ({
   }, [empleados]);
 
   const manejarTeclaEscape = useCallback((evento) => {
-    if (evento.key === "Escape") setIdTarjetaActiva(null);
+    if (evento.key === "Escape") {
+      setIdTarjetaActiva(null);
+    }
   }, []);
 
   useEffect(() => {
@@ -23,10 +26,6 @@ const TarjetaEmpleados = ({
 
     return () => window.removeEventListener("keydown", manejarTeclaEscape);
   }, [manejarTeclaEscape]);
-
-  const alternarTarjetaActiva = (id) => {
-    setIdTarjetaActiva((anterior) => (anterior === id ? null : id));
-  };
 
   return (
     <>
@@ -51,12 +50,7 @@ const TarjetaEmpleados = ({
                 className="mb-4"
               >
                 <Card
-                  className="
-                    border-0
-                    shadow-sm
-                    h-100
-                    overflow-hidden
-                  "
+                  className="border-0 shadow-sm h-100 overflow-hidden"
                   style={{
                     borderRadius: "18px",
                     cursor: "pointer",
@@ -64,89 +58,75 @@ const TarjetaEmpleados = ({
                   }}
                   onMouseEnter={() => setIdTarjetaActiva(empleado.id_empleado)}
                   onMouseLeave={() => setIdTarjetaActiva(null)}
-                  tabIndex={0}
                 >
                   <Card.Body
                     style={{
                       position: "relative",
                     }}
                   >
-                    {/* CONTENIDO */}
-
                     <Row className="align-items-center">
                       <Col xs={3}>
                         <div
-                          className="
-                            bg-light
-                            rounded-circle
-                            d-flex
-                            align-items-center
-                            justify-content-center
-                          "
+                          className="bg-light rounded-circle d-flex align-items-center justify-content-center"
                           style={{
                             width: "50px",
                             height: "50px",
                           }}
                         >
-                          <i
-                            className="
-                              bi-person-badge-fill
-                              text-dark
-                              fs-3
-                            "
-                          ></i>
+                          <i className="bi bi-person-badge-fill text-dark fs-3"></i>
                         </div>
                       </Col>
 
                       <Col xs={9}>
                         <div className="fw-bold text-truncate">
-                          {empleado.nombre}
+                          {empleado.nombre_empleado}{" "}
+                          {empleado.apellido_empleado}
+                        </div>
+
+                        <div className="small text-muted">{empleado.email}</div>
+
+                        <div className="small text-muted">
+                          {empleado.tipo_empleado}
                         </div>
 
                         <div className="small text-muted">
-                          {empleado.usuario}
+                          {empleado.celular || "-"}
                         </div>
 
-                        <div className="small text-muted">{empleado.rol}</div>
-
-                        {/* TURNO */}
-
                         <div className="mt-1">
-                          <span
-                            className="badge px-2 py-1"
-                            style={{
-                              backgroundColor:
-                                empleado.tipo_turno === "dia"
-                                  ? "#faec8e"
-                                  : "#59cbcb",
+                          {empleado.tipo_turno ? (
+                            <span
+                              className="badge px-2 py-1"
+                              style={{
+                                backgroundColor:
+                                  empleado.tipo_turno === "dia"
+                                    ? "#faec8e"
+                                    : "#59cbcb",
 
-                              color:
-                                empleado.tipo_turno === "dia"
-                                  ? "#231717"
-                                  : "#fbfbfb",
+                                color:
+                                  empleado.tipo_turno === "dia"
+                                    ? "#231717"
+                                    : "#fbfbfb",
 
-                              borderRadius: "8px",
-                              fontSize: "0.70rem",
-                              fontWeight: "600",
-                            }}
-                          >
-                            {empleado.tipo_turno === "dia" ? "Día" : "Noche"}
-                          </span>
+                                borderRadius: "8px",
+
+                                fontSize: "0.70rem",
+
+                                fontWeight: "600",
+                              }}
+                            >
+                              {empleado.tipo_turno === "dia" ? "Día" : "Noche"}
+                            </span>
+                          ) : (
+                            <small className="text-muted">No aplica</small>
+                          )}
                         </div>
                       </Col>
                     </Row>
 
-                    {/* CAPA OSCURA */}
-
                     {tarjetaActiva && (
                       <div
-                        className="
-                          d-flex
-                          gap-2
-                          justify-content-center
-                          align-items-center
-                          rounded-3
-                        "
+                        className="d-flex gap-2 justify-content-center align-items-center rounded-3"
                         style={{
                           position: "absolute",
                           top: 0,
@@ -156,38 +136,20 @@ const TarjetaEmpleados = ({
                           background: "rgba(0,0,0,0.6)",
                           zIndex: 10,
                         }}
-                        onClick={(e) => {
-                          e.stopPropagation();
-
-                          setIdTarjetaActiva(null);
-                        }}
                       >
-                        <div
-                          className="d-flex gap-2"
-                          onClick={(e) => e.stopPropagation()}
+                        <Button
+                          variant="warning"
+                          onClick={() => abrirModalEdicion(empleado)}
                         >
-                          <Button
-                            variant="warning"
-                            onClick={() => {
-                              abrirModalEdicion(empleado);
+                          <i className="bi bi-pencil"></i>
+                        </Button>
 
-                              setIdTarjetaActiva(null);
-                            }}
-                          >
-                            <i className="bi bi-pencil"></i>
-                          </Button>
-
-                          <Button
-                            variant="danger"
-                            onClick={() => {
-                              abrirModalEliminacion(empleado);
-
-                              setIdTarjetaActiva(null);
-                            }}
-                          >
-                            <i className="bi bi-trash"></i>
-                          </Button>
-                        </div>
+                        <Button
+                          variant="danger"
+                          onClick={() => abrirModalEliminacion(empleado)}
+                        >
+                          <i className="bi bi-trash"></i>
+                        </Button>
                       </div>
                     )}
                   </Card.Body>

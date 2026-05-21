@@ -11,14 +11,21 @@ const ModalEdicionVenta = ({
   const manejarCambio = (e) => {
     setVentaSeleccionada({
       ...ventaSeleccionada,
+
       monto: e.target.value,
     });
   };
 
   return (
-    <Modal show={show} onHide={onHide} centered>
-      <Modal.Header closeButton className="border-0">
-        <Modal.Title className="fw-bold">Editar Venta</Modal.Title>
+    <Modal
+      show={show}
+      onHide={onHide}
+      centered
+      backdrop="static"
+      keyboard={false}
+    >
+      <Modal.Header closeButton>
+        <Modal.Title>Editar Venta</Modal.Title>
       </Modal.Header>
 
       <Modal.Body>
@@ -34,7 +41,9 @@ const ModalEdicionVenta = ({
               disabled
               value={
                 ventaSeleccionada?.reservaciones?.clientes
-                  ? `${ventaSeleccionada.reservaciones.clientes.nombre} ${ventaSeleccionada.reservaciones.clientes.apellido || ""}`
+                  ? `${ventaSeleccionada.reservaciones.clientes.nombre} ${
+                      ventaSeleccionada.reservaciones.clientes.apellido || ""
+                    }`
                   : ""
               }
             />
@@ -55,12 +64,29 @@ const ModalEdicionVenta = ({
         </Form>
       </Modal.Body>
 
-      <Modal.Footer className="border-0">
-        <Button variant="light" onClick={onHide}>
+      <Modal.Footer>
+        {/* BOTÓN CANCELAR */}
+        <Button
+          variant="secondary"
+          onClick={onHide}
+          className="border-0"
+          style={{
+            borderRadius: "10px",
+            minWidth: "110px",
+          }}
+        >
           Cancelar
         </Button>
 
-        <Button className="color-navbar border-0" onClick={actualizarVenta}>
+        {/* BOTÓN GUARDAR */}
+        <Button
+          className="color-navbar border-0"
+          onClick={actualizarVenta}
+          style={{
+            borderRadius: "10px",
+            minWidth: "150px",
+          }}
+        >
           Guardar Cambios
         </Button>
       </Modal.Footer>

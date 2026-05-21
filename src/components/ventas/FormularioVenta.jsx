@@ -14,7 +14,9 @@ const FormularioVenta = ({
   const opcionesReservaciones = reservaciones.map((res) => ({
     value: res.id_reservacion,
 
-    label: `Hab ${res.habitaciones?.numero || "—"} - ${res.habitaciones?.tipo || "Sin tipo"} - ${res.clientes?.nombre || ""} ${res.clientes?.apellido || ""}`,
+    label: `Hab ${res.habitaciones?.numero || "—"} - ${
+      res.habitaciones?.tipo || "Sin tipo"
+    } - ${res.clientes?.nombre || ""} ${res.clientes?.apellido || ""}`,
   }));
 
   // ==================== EMPLEADOS ====================
@@ -22,7 +24,13 @@ const FormularioVenta = ({
   const opcionesEmpleados = empleados.map((emp) => ({
     value: emp.id_empleado,
 
-    label: `${emp.nombre} - ${emp.tipo_turno === "dia" ? "Día" : "Noche"}`,
+    label: `${emp.nombre_empleado} ${emp.apellido_empleado || ""} - ${
+      emp.tipo_empleado === "administrador"
+        ? "Administrador"
+        : emp.tipo_turno === "dia"
+          ? "Turno Día"
+          : "Turno Noche"
+    }`,
   }));
 
   // ==================== INPUTS ====================
@@ -53,6 +61,7 @@ const FormularioVenta = ({
       "
       style={{
         backgroundColor: "#ffffff",
+
         borderRadius: "18px",
       }}
     >
@@ -98,6 +107,7 @@ const FormularioVenta = ({
         <Form
           onSubmit={(e) => {
             e.preventDefault();
+
             agregarVenta();
           }}
         >

@@ -18,7 +18,7 @@ import ModalEdicionVenta from "../components/ventas/ModalEdicionVenta";
 import ModalEliminarVenta from "../components/ventas/ModalEliminarVenta";
 import ChatIA from "../components/chat/ChatIA";
 import TarjetaVenta from "../components/ventas/TarjetaVenta";
-
+import Paginacion from "../components/ordenamiento/Paginacion"; 
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 
@@ -49,6 +49,23 @@ const Ventas = () => {
     monto: "",
   });
 
+  const [registrosPorPagina, setRegistrosPorPagina] = useState(10);
+  const [paginaActual, setPaginaActual] = useState(1);
+
+  const ventasPaginadas = ventasFiltradas.slice(
+    (paginaActual - 1) * registrosPorPagina,
+    paginaActual * registrosPorPagina
+  );
+
+  const establecerPaginaActual = (pagina) => {
+    setPaginaActual(pagina);
+  };
+
+  const establecerRegistrosPorPagina = (cantidad) => {
+    setRegistrosPorPagina(cantidad);
+    setPaginaActual(1);
+  };
+
   // ==================== CARGAR DATOS ====================
 
   const cargarDatos = async () => {
@@ -67,11 +84,16 @@ const Ventas = () => {
           )
         `);
 
-      const { data: empData } = await supabase.from("empleados").select(`
-          id_empleado,
-          nombre,
-          tipo_turno
-        `);
+const { data: empData } = await supabase
+  .from("empleados")
+  .select(`
+    id_empleado,
+    nombre_empleado,
+    apellido_empleado,
+    tipo_turno,
+    tipo_empleado
+  `)
+  .eq("tipo_empleado", "recepcionista");
 
       const { data: ventasData } = await supabase
         .from("ventas")
@@ -94,7 +116,8 @@ const Ventas = () => {
           ),
 
           empleados (
-            nombre,
+            nombre_empleado,
+            apellido_empleado,
             tipo_turno
           )
         `,
@@ -114,83 +137,81 @@ const Ventas = () => {
 
   // ==================== AGREGAR VENTA ====================
 
-const manejarAgregarVenta = async () => {
-  if (
-    !nuevaVenta.id_reservacion ||
-    !nuevaVenta.id_empleado ||
-    !nuevaVenta.monto
-  ) {
-    setToast({
-      mostrar: true,
-      mensaje: "Complete todos los campos",
-      tipo: "error",
-    });
-
-    return;
-  }
-
-  try {
-
-    // ==================== VALIDAR DUPLICADOS ====================
-
-    const { data: ventaExistente } = await supabase
-      .from("ventas")
-      .select("id_venta")
-      .eq("id_reservacion", nuevaVenta.id_reservacion)
-      .maybeSingle();
-
-    // SI YA EXISTE
-
-    if (ventaExistente) {
+  const manejarAgregarVenta = async () => {
+    if (
+      !nuevaVenta.id_reservacion ||
+      !nuevaVenta.id_empleado ||
+      !nuevaVenta.monto
+    ) {
       setToast({
         mostrar: true,
-        mensaje: "Esta reservación ya tiene una venta registrada",
+        mensaje: "Complete todos los campos",
         tipo: "error",
       });
 
       return;
     }
 
-    // ==================== INSERTAR ====================
+    try {
+      // ==================== VALIDAR DUPLICADOS ====================
 
-    const { error } = await supabase.from("ventas").insert([
-      {
-        id_venta: crypto.randomUUID(),
-        id_reservacion: nuevaVenta.id_reservacion,
-        id_empleado: nuevaVenta.id_empleado,
-        monto: parseFloat(nuevaVenta.monto),
-        fecha: new Date().toISOString(),
-      },
-    ]);
+      const { data: ventaExistente } = await supabase
+        .from("ventas")
+        .select("id_venta")
+        .eq("id_reservacion", nuevaVenta.id_reservacion)
+        .maybeSingle();
 
-    if (error) throw error;
+      // SI YA EXISTE
 
-    setToast({
-      mostrar: true,
-      mensaje: "Venta registrada correctamente",
-      tipo: "exito",
-    });
+      if (ventaExistente) {
+        setToast({
+          mostrar: true,
+          mensaje: "Esta reservación ya tiene una venta registrada",
+          tipo: "error",
+        });
 
-    // ==================== LIMPIAR FORMULARIO ====================
+        return;
+      }
 
-    setNuevaVenta({
-      id_reservacion: "",
-      id_empleado: "",
-      monto: "",
-    });
+      // ==================== INSERTAR ====================
 
-    cargarDatos();
+      const { error } = await supabase.from("ventas").insert([
+        {
+          id_venta: crypto.randomUUID(),
+          id_reservacion: nuevaVenta.id_reservacion,
+          id_empleado: nuevaVenta.id_empleado,
+          monto: parseFloat(nuevaVenta.monto),
+          fecha: new Date().toISOString(),
+        },
+      ]);
 
-  } catch (error) {
-    console.error(error);
+      if (error) throw error;
 
-    setToast({
-      mostrar: true,
-      mensaje: "Error al registrar",
-      tipo: "error",
-    });
-  }
-};
+      setToast({
+        mostrar: true,
+        mensaje: "Venta registrada correctamente",
+        tipo: "exito",
+      });
+
+      // ==================== LIMPIAR FORMULARIO ====================
+
+      setNuevaVenta({
+        id_reservacion: "",
+        id_empleado: "",
+        monto: "",
+      });
+
+      cargarDatos();
+    } catch (error) {
+      console.error(error);
+
+      setToast({
+        mostrar: true,
+        mensaje: "Error al registrar",
+        tipo: "error",
+      });
+    }
+  };
 
   // ==================== ACTUALIZAR ====================
 
@@ -270,7 +291,8 @@ const manejarAgregarVenta = async () => {
       const habitacion =
         v.reservaciones?.habitaciones?.numero?.toString().toLowerCase() || "";
 
-      const empleado = v.empleados?.nombre?.toLowerCase() || "";
+      const empleado =
+        `${v.empleados?.nombre_empleado || ""} ${v.empleados?.apellido_empleado || ""}`.toLowerCase();
 
       return (
         cliente.includes(query) ||
@@ -280,6 +302,7 @@ const manejarAgregarVenta = async () => {
     });
 
     setVentasFiltradas(filtradas);
+    setPaginaActual(1);
   }, [textoBusqueda, ventas]);
 
   // ==================== PDF INDIVIDUAL ====================
@@ -309,7 +332,11 @@ const manejarAgregarVenta = async () => {
 
     doc.text(`Tipo: ${v.reservaciones?.habitaciones?.tipo}`, 20, 70);
 
-    doc.text(`Empleado: ${v.empleados?.nombre}`, 20, 80);
+    doc.text(
+      `Empleado: ${v.empleados?.nombre_empleado} ${v.empleados?.apellido_empleado}`,
+      20,
+      80,
+    );
 
     doc.text(
       `Turno: ${v.empleados?.tipo_turno === "dia" ? "Día" : "Noche"}`,
@@ -382,7 +409,7 @@ const manejarAgregarVenta = async () => {
 
       v.reservaciones?.habitaciones?.tipo || "—",
 
-      v.empleados?.nombre || "—",
+      `${v.empleados?.nombre_empleado || ""} ${v.empleados?.apellido_empleado || ""}`,
 
       v.empleados?.tipo_turno === "dia" ? "Día" : "Noche",
 
@@ -572,10 +599,9 @@ const manejarAgregarVenta = async () => {
                     </td>
                   </tr>
                 ) : (
-                  ventasFiltradas.map((v, index) => (
-                    <tr key={v.id_venta}>
-                      {/* ID */}
 
+                  ventasPaginadas.map((v, index) => (
+                    <tr key={v.id_venta}>
                       <td>{index + 1}</td>
 
                       {/* CLIENTE */}
@@ -601,7 +627,10 @@ const manejarAgregarVenta = async () => {
 
                       {/* EMPLEADO */}
 
-                      <td>{v.empleados?.nombre}</td>
+                      <td>
+                        {v.empleados?.nombre_empleado}{" "}
+                        {v.empleados?.apellido_empleado}
+                      </td>
 
                       {/* TURNO */}
 
@@ -712,7 +741,7 @@ const manejarAgregarVenta = async () => {
           {/* ==================== MOBILE ==================== */}
 
           <div className="d-block d-md-none">
-            {ventasFiltradas.map((v, index) => (
+            {ventasPaginadas.map((v, index) => (
               <TarjetaVenta
                 key={v.id_venta}
                 v={v}
@@ -724,6 +753,14 @@ const manejarAgregarVenta = async () => {
               />
             ))}
           </div>
+
+          <Paginacion
+            registrosPorPagina={registrosPorPagina}
+            totalRegistros={ventasFiltradas.length}
+            paginaActual={paginaActual}
+            establecerPaginaActual={establecerPaginaActual}
+            establecerRegistrosPorPagina={establecerRegistrosPorPagina}
+          />
         </Col>
       </Row>
 

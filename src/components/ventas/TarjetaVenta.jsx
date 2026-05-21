@@ -11,64 +11,30 @@ const TarjetaVenta = ({
 }) => {
   return (
     <Card
-      className="
-        border-0
-        shadow-sm
-        mb-4
-        overflow-hidden
-      "
+      className="border-0 shadow-sm mb-4 overflow-hidden"
       style={{
         borderRadius: "20px",
         transition: "0.3s",
       }}
     >
       {/* HEADER */}
-
       <div
-        className="
-          d-flex
-          justify-content-between
-          align-items-center
-          px-3
-          py-3
-        "
+        className="d-flex justify-content-between align-items-center px-3 py-3"
         style={{
           background: "linear-gradient(135deg, #2c6c62, #3d8b7f)",
         }}
       >
         <div className="d-flex align-items-center gap-2">
           <div
-            className="
-              bg-white
-              rounded-circle
-              d-flex
-              align-items-center
-              justify-content-center
-            "
-            style={{
-              width: "45px",
-              height: "45px",
-            }}
+            className="bg-white rounded-circle d-flex align-items-center justify-content-center"
+            style={{ width: "45px", height: "45px" }}
           >
-            <i
-              className="
-                bi bi-receipt-cutoff
-                text-dark
-                fs-4
-              "
-            ></i>
+            <i className="bi bi-receipt-cutoff text-dark fs-4"></i>
           </div>
 
           <div>
             <div className="text-white fw-bold">Venta #{index + 1}</div>
-
-            <small
-              style={{
-                color: "#d9f3ee",
-              }}
-            >
-              Registro de venta
-            </small>
+            <small style={{ color: "#d9f3ee" }}>Registro de venta</small>
           </div>
         </div>
 
@@ -76,60 +42,33 @@ const TarjetaVenta = ({
           bg="light"
           text="dark"
           className="fw-semibold px-3 py-2"
-          style={{
-            borderRadius: "10px",
-            fontSize: "0.75rem",
-          }}
+          style={{ borderRadius: "10px", fontSize: "0.75rem" }}
         >
           Hab {v.reservaciones?.habitaciones?.numero || "—"}
         </Badge>
       </div>
 
       {/* BODY */}
-
       <Card.Body className="p-3">
         {/* CLIENTE */}
-
         <div
           className="p-3 mb-3"
-          style={{
-            backgroundColor: "#f8f9fa",
-            borderRadius: "14px",
-          }}
+          style={{ backgroundColor: "#f8f9fa", borderRadius: "14px" }}
         >
           <div className="d-flex align-items-center gap-3">
             <div
-              className="
-                bg-white
-                rounded-circle
-                d-flex
-                align-items-center
-                justify-content-center
-                shadow-sm
-              "
-              style={{
-                width: "50px",
-                height: "50px",
-              }}
+              className="bg-white rounded-circle d-flex align-items-center justify-content-center shadow-sm"
+              style={{ width: "50px", height: "50px" }}
             >
-              <i
-                className="
-                  bi bi-person-fill
-                  text-dark
-                  fs-4
-                "
-              ></i>
+              <i className="bi bi-person-fill text-dark fs-4"></i>
             </div>
 
             <div>
-              <h6
-                className="fw-bold mb-1"
-                style={{
-                  color: "#2c6c62",
-                }}
-              >
+              <h6 className="fw-bold mb-1" style={{ color: "#2c6c62" }}>
                 {v.reservaciones?.clientes
-                  ? `${v.reservaciones.clientes.nombre} ${v.reservaciones.clientes.apellido || ""}`
+                  ? `${v.reservaciones.clientes.nombre} ${
+                      v.reservaciones.clientes.apellido || ""
+                    }`
                   : "N/A"}
               </h6>
 
@@ -141,10 +80,8 @@ const TarjetaVenta = ({
         </div>
 
         {/* INFORMACION */}
-
         <Row className="g-3">
           {/* EMPLEADO */}
-
           <Col xs={6}>
             <div
               className="p-3 h-100"
@@ -157,24 +94,22 @@ const TarjetaVenta = ({
 
               <div
                 className="fw-semibold text-truncate"
-                style={{
-                  fontSize: "0.9rem",
-                }}
+                style={{ fontSize: "0.9rem" }}
               >
-                {v.empleados?.nombre || "No asignado"}
+                {v.empleados
+                  ? `${v.empleados.nombre_empleado} ${v.empleados.apellido_empleado || ""}`
+                  : "No asignado"}
               </div>
             </div>
           </Col>
 
           {/* TURNO */}
-
           <Col xs={6}>
             <div
               className="p-3 text-center h-100"
               style={{
                 backgroundColor:
                   v.empleados?.tipo_turno === "dia" ? "#fff4cc" : "#d8f5f5",
-
                 borderRadius: "14px",
               }}
             >
@@ -182,12 +117,7 @@ const TarjetaVenta = ({
 
               <div
                 className="fw-bold"
-                style={{
-                  fontSize: "0.9rem",
-
-                  color:
-                    v.empleados?.tipo_turno === "dia" ? "#231717" : "#231717",
-                }}
+                style={{ fontSize: "0.9rem", color: "#231717" }}
               >
                 {v.empleados?.tipo_turno === "dia" ? "Día" : "Noche"}
               </div>
@@ -195,46 +125,30 @@ const TarjetaVenta = ({
           </Col>
 
           {/* FECHA */}
-
           <Col xs={6}>
             <div
               className="p-3 h-100"
-              style={{
-                backgroundColor: "#f8f9fa",
-                borderRadius: "14px",
-              }}
+              style={{ backgroundColor: "#f8f9fa", borderRadius: "14px" }}
             >
               <small className="text-muted d-block mb-1">Fecha</small>
 
-              <div
-                className="fw-semibold"
-                style={{
-                  fontSize: "0.85rem",
-                }}
-              >
+              <div className="fw-semibold" style={{ fontSize: "0.85rem" }}>
                 {v.fecha ? new Date(v.fecha).toLocaleDateString() : "S/F"}
               </div>
             </div>
           </Col>
 
           {/* TOTAL */}
-
           <Col xs={6}>
             <div
               className="p-3 text-center h-100"
-              style={{
-                backgroundColor: "#ecfdf5",
-                borderRadius: "14px",
-              }}
+              style={{ backgroundColor: "#ecfdf5", borderRadius: "14px" }}
             >
               <small className="text-muted d-block mb-1">Total</small>
 
               <div
                 className="fw-bold"
-                style={{
-                  color: "#198754",
-                  fontSize: "1rem",
-                }}
+                style={{ color: "#198754", fontSize: "1rem" }}
               >
                 C$ {parseFloat(v.monto || 0).toFixed(2)}
               </div>
@@ -243,10 +157,7 @@ const TarjetaVenta = ({
         </Row>
 
         {/* BOTONES */}
-
         <div className="d-flex gap-2 mt-4">
-          {/* PDF */}
-
           <Button
             className="border-0 flex-fill"
             style={{
@@ -261,8 +172,6 @@ const TarjetaVenta = ({
             <i className="bi bi-file-earmark-pdf me-1"></i>
             PDF
           </Button>
-
-          {/* EDITAR */}
 
           <Button
             className="border-0 flex-fill"
@@ -281,8 +190,6 @@ const TarjetaVenta = ({
             <i className="bi bi-pencil-square me-1"></i>
             Editar
           </Button>
-
-          {/* ELIMINAR */}
 
           <Button
             className="border-0 flex-fill"
