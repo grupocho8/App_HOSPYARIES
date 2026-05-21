@@ -68,32 +68,33 @@ const Ventas = () => {
 
   // ==================== CARGAR DATOS ====================
 
-  const cargarDatos = async () => {
+const cargarDatos = async () => {
     try {
       setCargando(true);
 
+      // 1. Carga de Reservaciones (Se corrigió habitaciones!id_habitacion)
       const { data: resData } = await supabase.from("reservaciones").select(`
           id_reservacion,
           clientes (
             nombre,
             apellido
           ),
-          habitaciones (
+          habitaciones!id_habitacion (
             numero,
             tipo
           )
         `);
 
-const { data: empData } = await supabase
-  .from("empleados")
-  .select(`
-    id_empleado,
-    nombre_empleado,
-    apellido_empleado,
-    tipo_turno,
-    tipo_empleado
-  `)
-  .eq("tipo_empleado", "recepcionista");
+      const { data: empData } = await supabase
+        .from("empleados")
+        .select(`
+          id_empleado,
+          nombre_empleado,
+          apellido_empleado,
+          tipo_turno,
+          tipo_empleado
+        `)
+        .eq("tipo_empleado", "recepcionista");
 
       const { data: ventasData } = await supabase
         .from("ventas")
@@ -109,7 +110,7 @@ const { data: empData } = await supabase
               apellido
             ),
 
-            habitaciones (
+            habitaciones!id_habitacion (
               numero,
               tipo
             )
