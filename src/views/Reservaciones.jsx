@@ -11,6 +11,8 @@ import ModalEliminarReservaciones from "../components/reservaciones/ModalElimina
 import TablaReservaciones from "../components/reservaciones/TablaReservaciones";
 import TarjetaReservaciones from "../components/reservaciones/TarjetaReservaciones";
 
+import Paginacion from "../components/ordenamiento/Paginacion"; // ✅ NUEVO
+
 const Reservaciones = () => {
   const [reservaciones, setReservaciones] = useState([]);
   const [reservacionesFiltradas, setReservacionesFiltradas] = useState([]);
@@ -36,6 +38,25 @@ const Reservaciones = () => {
   const [reservacionEditar, setReservacionEditar] = useState(null);
   const [reservacionAEliminar, setReservacionAEliminar] = useState(null);
 
+  // ESTADOS DE PAGINACIÓN ADICIONADOS
+  const [registrosPorPagina, setRegistrosPorPagina] = useState(10);
+  const [paginaActual, setPaginaActual] = useState(1);
+
+  // SECCIÓN DE CÁLCULO DE REGISTROS PAGINADOS
+  const reservacionesPaginadas = reservacionesFiltradas.slice(
+    (paginaActual - 1) * registrosPorPagina,
+    paginaActual * registrosPorPagina
+  );
+
+  const establecerPaginaActual = (pagina) => {
+    setPaginaActual(pagina);
+  };
+
+  const establecerRegistrosPorPagina = (cantidad) => {
+    setRegistrosPorPagina(cantidad);
+    setPaginaActual(1);
+  };
+
   const cargarDatosReferenciales = async () => {
     const resClientes = await supabase.from("clientes").select("id_cliente, nombre");
 
@@ -48,7 +69,7 @@ const Reservaciones = () => {
     setHabitaciones(resHabitaciones.data || []);
   };
 
-const cargarReservaciones = async () => {
+  const cargarReservaciones = async () => {
     try {
       setCargando(true);
       const { data, error } = await supabase
@@ -83,7 +104,7 @@ const cargarReservaciones = async () => {
     cargarReservaciones();
   }, []);
 
-  // ==================== BÚSQUEDA (CORREGIDA) ====================
+  // ==================== BÚSQUEDA (CON RESET DE PAGINACIÓN) ====================
   useEffect(() => {
     if (!textoBusqueda.trim()) {
       setReservacionesFiltradas(reservaciones);
@@ -96,115 +117,110 @@ const cargarReservaciones = async () => {
 
         return (
           cliente?.nombre?.toLowerCase().includes(texto) ||
-          cliente?.apellido?.toLowerCase().includes(texto) || // Búsqueda por apellido
-          cliente?.cedula?.includes(texto) ||                // Búsqueda por cédula
+          cliente?.apellido?.toLowerCase().includes(texto) ||
+          cliente?.cedula?.includes(texto) ||
           habitacion?.numero?.toString().includes(texto) ||
-          habitacion?.tipo?.toLowerCase().includes(texto)    // Búsqueda por tipo de hab
+          habitacion?.tipo?.toLowerCase().includes(texto)
         );
       });
 
       setReservacionesFiltradas(filtrados);
     }
+    // RESETEA A PÁGINA 1 AL BUSCAR
+    setPaginaActual(1);
   }, [textoBusqueda, reservaciones]);
 
-const agregarReservacion = async () => {
-  try {
-    // Insertar la reservación
-    const { error: errorReserva } = await supabase.from("reservaciones").insert([
-      {
-        id_reservacion: crypto.randomUUID(),
-        ...nuevaReservacion
-      }
-    ]);
-    if (errorReserva) throw errorReserva;
+  const agregarReservacion = async () => {
+    try {
+      const { error: errorReserva } = await supabase.from("reservaciones").insert([
+        {
+          id_reservacion: crypto.randomUUID(),
+          ...nuevaReservacion
+        }
+      ]);
+      if (errorReserva) throw errorReserva;
 
-    //Actualizar el estado de la habitación a 'ocupada'
-    const { error: errorHabitacion } = await supabase
-      .from("habitaciones")
-      .update({ estado: "ocupada" }) 
-      .eq("id_habitacion", nuevaReservacion.id_habitacion);
+      const { error: errorHabitacion } = await supabase
+        .from("habitaciones")
+        .update({ estado: "ocupada" }) 
+        .eq("id_habitacion", nuevaReservacion.id_habitacion);
 
-    if (errorHabitacion) throw errorHabitacion;
+      if (errorHabitacion) throw errorHabitacion;
 
-    setToast({ mostrar: true, mensaje: "Reservación creada y habitación ocupada", tipo: "exito" });
-    setMostrarModal(false);
-    setNuevaReservacion({
-      id_cliente: "",
-      id_habitacion: "",
-      fecha_inicio: "",
-      fecha_fin: "",
-      estado: "Pendiente"
-    });
+      setToast({ mostrar: true, mensaje: "Reservación creada y habitación ocupada", tipo: "exito" });
+      setMostrarModal(false);
+      setNuevaReservacion({
+        id_cliente: "",
+        id_habitacion: "",
+        fecha_inicio: "",
+        fecha_fin: "",
+        estado: "Pendiente"
+      });
 
-    cargarReservaciones();
-  } catch (err) {
-    console.error(err);
-    setToast({ mostrar: true, mensaje: "Error en la operación", tipo: "error" });
-  }
-};
-
-const actualizarReservacion = async () => {
-  try {
-    // Actualizar la reservación
-    const { error: errorReserva } = await supabase
-      .from("reservaciones")
-      .update({
-        fecha_inicio: reservacionEditar.fecha_inicio,
-        fecha_fin: reservacionEditar.fecha_fin,
-        estado: reservacionEditar.estado
-      })
-      .eq("id_reservacion", reservacionEditar.id_reservacion);
-
-    if (errorReserva) throw errorReserva;
-
-    // LÓGICA DE SINCRONIZACIÓN:
-    // Determinamos el nuevo estado de la habitación según el estado de la reserva
-    let nuevoEstadoHabitacion = "ocupada"; // por defecto sigue ocupada
-
-    if (reservacionEditar.estado === "finalizada" || reservacionEditar.estado === "cancelada") {
-      nuevoEstadoHabitacion = "disponible";
+      cargarReservaciones();
+    } catch (err) {
+      console.error(err);
+      setToast({ mostrar: true, mensaje: "Error en la operación", tipo: "error" });
     }
+  };
 
-    const { error: errorHabitacion } = await supabase
-      .from("habitaciones")
-      .update({ estado: nuevoEstadoHabitacion })
-      .eq("id_habitacion", reservacionEditar.id_habitacion);
+  const actualizarReservacion = async () => {
+    try {
+      const { error: errorReserva } = await supabase
+        .from("reservaciones")
+        .update({
+          fecha_inicio: reservacionEditar.fecha_inicio,
+          fecha_fin: reservacionEditar.fecha_fin,
+          estado: reservacionEditar.estado
+        })
+        .eq("id_reservacion", reservacionEditar.id_reservacion);
 
-    if (errorHabitacion) throw errorHabitacion;
+      if (errorReserva) throw errorReserva;
 
-    setToast({ mostrar: true, mensaje: "Registro y estado de habitación actualizados", tipo: "exito" });
-    setMostrarModalEdicion(false);
-    cargarReservaciones();
-  } catch (err) {
-    setToast({ mostrar: true, mensaje: "Error al actualizar", tipo: "error" });
-  }
-};
+      let nuevoEstadoHabitacion = "ocupada";
 
-const eliminarReservacion = async () => {
-  try {
-    // Antes de borrar, necesitamos el ID de la habitación
-    const idHabitacionLiberar = reservacionAEliminar.id_habitacion;
+      if (reservacionEditar.estado === "finalizada" || reservacionEditar.estado === "cancelada") {
+        nuevoEstadoHabitacion = "disponible";
+      }
 
-    const { error: errorBorrado } = await supabase
-      .from("reservaciones")
-      .delete()
-      .eq("id_reservacion", reservacionAEliminar.id_reservacion);
+      const { error: errorHabitacion } = await supabase
+        .from("habitaciones")
+        .update({ estado: nuevoEstadoHabitacion })
+        .eq("id_habitacion", reservacionEditar.id_habitacion);
 
-    if (errorBorrado) throw errorBorrado;
+      if (errorHabitacion) throw errorHabitacion;
 
-    // LIBERAR HABITACIÓN
-    await supabase
-      .from("habitaciones")
-      .update({ estado: "disponible" })
-      .eq("id_habitacion", idHabitacionLiberar);
+      setToast({ mostrar: true, mensaje: "Registro y estado de habitación actualizados", tipo: "exito" });
+      setMostrarModalEdicion(false);
+      cargarReservaciones();
+    } catch (err) {
+      setToast({ mostrar: true, mensaje: "Error al actualizar", tipo: "error" });
+    }
+  };
 
-    setToast({ mostrar: true, mensaje: "Reserva eliminada y habitación liberada", tipo: "exito" });
-    setMostrarModalEliminacion(false);
-    cargarReservaciones();
-  } catch (err) {
-    setToast({ mostrar: true, mensaje: "Error al eliminar", tipo: "error" });
-  }
-};
+  const eliminarReservacion = async () => {
+    try {
+      const idHabitacionLiberar = reservacionAEliminar.id_habitacion;
+
+      const { error: errorBorrado } = await supabase
+        .from("reservaciones")
+        .delete()
+        .eq("id_reservacion", reservacionAEliminar.id_reservacion);
+
+      if (errorBorrado) throw errorBorrado;
+
+      await supabase
+        .from("habitaciones")
+        .update({ estado: "disponible" })
+        .eq("id_habitacion", idHabitacionLiberar);
+
+      setToast({ mostrar: true, mensaje: "Reserva eliminada y habitación liberada", tipo: "exito" });
+      setMostrarModalEliminacion(false);
+      cargarReservaciones();
+    } catch (err) {
+      setToast({ mostrar: true, mensaje: "Error al eliminar", tipo: "error" });
+    }
+  };
 
   const abrirModalEdicion = (res) => {
     setReservacionEditar(res);
@@ -216,106 +232,120 @@ const eliminarReservacion = async () => {
     setMostrarModalEliminacion(true);
   };
 
-  return (
-    <Container className="mt-5 pt-4">
-      <Row className="align-items-center mb-4">
-        <Col xs={8}>
-          <h3 className="fw-bold">
-            <i className="bi bi-calendar-check-fill me-2 text-primary"></i>
-            Reservaciones
-          </h3>
-        </Col>
-        <Col xs={4} className="text-end">
-          {/* Eliminamos el botón de cambio de vista y dejamos solo el de Nueva Reservación */}
-          <Button
-            onClick={() => setMostrarModal(true)}
-            className="color-navbar border-0 shadow-sm"
-          >
-            <i className="bi bi-plus-lg me-1"></i>
-            <span className="d-none d-sm-inline">Nueva Reservación</span>
-          </Button>
-        </Col>
+return (
+  <Container className="mt-4">
+    {/* Contenedor del título con el borde inferior idéntico al de Clientes */}
+    <div className="border-bottom pb-3 mb-4">
+      <Row className="align-items-center">
+         <Col xs={9} sm={7} md={7} lg={7}>
+           <h3><i className="bi-calendar-check-fill me-2"></i> Reservaciones</h3>
+         </Col>
+
+               <Col xs={3} sm={5} md={5} lg={5} className="text-end">
+                 <Button
+                   onClick={() =>
+                     setMostrarModal(
+                       true
+                     )
+                   }
+                   size="md"
+                   className="color-navbar border-0"
+                 >
+                   <i className="bi-plus-lg"></i>
+       
+                   <span className="d-none d-sm-inline ms-2">
+                     Nueva Reservación
+                   </span>
+                 </Button>
+               </Col>
       </Row>
+    </div>
 
-      <hr />
+    {/* Buscador */}
+    <Row className="mb-4">
+      <Col md={6} lg={5}>
+        <CuadroBusquedas
+          textoBusqueda={textoBusqueda}
+          manejarCambioBusqueda={(e) => setTextoBusqueda(e.target.value)}
+          placeholder="Buscar..."
+        />
+      </Col>
+    </Row>
 
-      <Row className="mb-4">
-        <Col md={6} lg={5}>
-          <CuadroBusquedas
-            textoBusqueda={textoBusqueda}
-            manejarCambioBusqueda={(e) => setTextoBusqueda(e.target.value)}
-            placeholder="Buscar por cliente o habitación..."
+    {cargando ? (
+      <div className="text-center my-5 py-5">
+        <Spinner animation="border" variant="primary" />
+        <p className="mt-2 text-muted">Cargando...</p>
+      </div>
+    ) : (
+      <Row>
+        {/* --- VISTA MÓVIL (TARJETAS) --- */}
+        <Col xs={12} className="d-lg-none">
+          <TarjetaReservaciones
+            reservaciones={reservacionesPaginadas}
+            abrirModalEdicion={abrirModalEdicion}
+            abrirModalEliminacion={abrirModalEliminacion}
+          />
+        </Col>
+
+        {/* --- VISTA PC (TABLA) --- */}
+        <Col lg={12} className="d-none d-lg-block">
+          <TablaReservaciones
+            reservaciones={reservacionesPaginadas}
+            abrirModalEdicion={abrirModalEdicion}
+            abrirModalEliminacion={abrirModalEliminacion}
+            paginaActual={paginaActual}
+            registrosPorPagina={registrosPorPagina}
           />
         </Col>
       </Row>
+    )}
 
-      {cargando ? (
-        <div className="text-center my-5 py-5">
-          <Spinner animation="border" variant="primary" />
-          <p className="mt-2 text-muted">Cargando...</p>
-        </div>
-      ) : (
-        <Row>
-          {/* --- VISTA MÓVIL (TARJETAS) --- */}
-          {/* Se muestra en pantallas pequeñas (xs, sm, md) y se oculta en grandes (lg) */}
-          <Col xs={12} className="d-lg-none">
-            <TarjetaReservaciones
-              reservaciones={reservacionesFiltradas}
-              abrirModalEdicion={abrirModalEdicion}
-              abrirModalEliminacion={abrirModalEliminacion}
-            />
-          </Col>
+    {/* COMPONENTE DE PAGINACIÓN */}
+    <Paginacion
+      registrosPorPagina={registrosPorPagina}
+      totalRegistros={reservacionesFiltradas.length}
+      paginaActual={paginaActual}
+      establecerPaginaActual={establecerPaginaActual}
+      establecerRegistrosPorPagina={establecerRegistrosPorPagina}
+    />
 
-          {/* --- VISTA PC (TABLA) --- */}
-          {/* Se oculta por defecto y se muestra solo desde pantallas grandes (lg) */}
-          <Col lg={12} className="d-none d-lg-block">
-            <div className="bg-white rounded shadow-sm border">
-              <TablaReservaciones
-                reservaciones={reservacionesFiltradas}
-                abrirModalEdicion={abrirModalEdicion}
-                abrirModalEliminacion={abrirModalEliminacion}
-              />
-            </div>
-          </Col>
-        </Row>
-      )}
+    {/* --- MODALES --- */}
+    <ModalRegistroReservaciones
+      mostrarModal={mostrarModal}
+      setMostrarModal={setMostrarModal}
+      nuevaReservacion={nuevaReservacion}
+      setNuevaReservacion={setNuevaReservacion}
+      agregarReservacion={agregarReservacion}
+      clientes={clientes}
+      habitaciones={habitaciones}
+    />
 
-      {/* --- MODALES --- */}
-      <ModalRegistroReservaciones
-        mostrarModal={mostrarModal}
-        setMostrarModal={setMostrarModal}
-        nuevaReservacion={nuevaReservacion}
-        setNuevaReservacion={setNuevaReservacion}
-        agregarReservacion={agregarReservacion}
-        clientes={clientes}
-        habitaciones={habitaciones}
+    {reservacionEditar && (
+      <ModalEdicionReservaciones
+        mostrarModalEdicion={mostrarModalEdicion}
+        setMostrarModalEdicion={setMostrarModalEdicion}
+        reservacionEditar={reservacionEditar}
+        setReservacionEditar={setReservacionEditar}
+        actualizarReservacion={actualizarReservacion}
       />
+    )}
 
-      {reservacionEditar && (
-        <ModalEdicionReservaciones
-          mostrarModalEdicion={mostrarModalEdicion}
-          setMostrarModalEdicion={setMostrarModalEdicion}
-          reservacionEditar={reservacionEditar}
-          setReservacionEditar={setReservacionEditar}
-          actualizarReservacion={actualizarReservacion}
-        />
-      )}
+    <ModalEliminarReservaciones
+      mostrarModalEliminacion={mostrarModalEliminacion}
+      setMostrarModalEliminacion={setMostrarModalEliminacion}
+      reservacionEliminar={reservacionAEliminar}
+      eliminarReservacion={eliminarReservacion}
+    />
 
-      <ModalEliminarReservaciones
-        mostrarModalEliminacion={mostrarModalEliminacion}
-        setMostrarModalEliminacion={setMostrarModalEliminacion}
-        reservacionEliminar={reservacionAEliminar}
-        eliminarReservacion={eliminarReservacion}
-      />
-
-      <NotificacionOperacion
-        mostrar={toast.mostrar}
-        mensaje={toast.mensaje}
-        tipo={toast.tipo}
-        onCerrar={() => setToast({ ...toast, mostrar: false })}
-      />
-    </Container>
-  );
+    <NotificacionOperacion
+      mostrar={toast.mostrar}
+      mensaje={toast.mensaje}
+      tipo={toast.tipo}
+      onCerrar={() => setToast({ ...toast, mostrar: false })}
+    />
+  </Container>
+);
 };
 
 export default Reservaciones;

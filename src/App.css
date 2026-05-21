@@ -74,3 +74,25 @@
   border-color: #0F5C4F !important;
   box-shadow: 0 0 0 0.2rem rgba(15, 92, 79, 0.25) !important;
 }
+
+/* index.css */
+
+/* Efecto sutil de elevación para las tarjetas */
+.translate-hover-y {
+  transition: transform 0.25s ease-in-out, box-shadow 0.25s ease-in-out;
+}
+
+.translate-hover-y:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 1rem 3rem rgba(0,0,0,.175)!important; /* Sombra más pronunciada al hover */
+}
+
+/* Define la fuente monospace de Bootstrap por si acaso */
+.fw-mono {
+  font-family: SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+}
+
+/* Suaviza las líneas divisorias */
+.opacity-15 {
+  opacity: 0.15;
+}

@@ -2,68 +2,101 @@ import React from "react";
 import { Row, Col, Card, Button } from "react-bootstrap";
 import "bootstrap-icons/font/bootstrap-icons.css";
 
-const TablaHabitaciones = ({ 
-  habitaciones, 
-  abrirModalEdicion, 
-  abrirModalEliminacion 
+const TablaHabitaciones = ({
+  habitaciones,
+  abrirModalEdicion,
+  abrirModalEliminacion,
 }) => {
-
   // --- Lógica de Estadísticas ---
   const total = habitaciones?.length || 0;
-  const disponibles = habitaciones?.filter(h => h.estado === 'disponible').length || 0;
-  const ocupadas = habitaciones?.filter(h => h.estado === 'ocupada').length || 0;
-  const reservadas = habitaciones?.filter(h => h.estado === 'reservada').length || 0;
-  
+  const disponibles =
+    habitaciones?.filter((h) => h.estado === "disponible").length || 0;
+  const ocupadas =
+    habitaciones?.filter((h) => h.estado === "ocupada").length || 0;
+  const reservadas =
+    habitaciones?.filter((h) => h.estado === "reservada").length || 0;
+
   // Cálculo de Ingresos (Suma de precios de habitaciones ocupadas)
-  const ingresosOcupadas = habitaciones
-    ?.filter(h => h.estado === 'ocupada')
-    .reduce((acc, h) => acc + parseFloat(h.precio || 0), 0) || 0;
-  
+  const ingresosOcupadas =
+    habitaciones
+      ?.filter((h) => h.estado === "ocupada")
+      .reduce((acc, h) => acc + parseFloat(h.precio || 0), 0) || 0;
+
   const tasaOcupacion = total > 0 ? ((ocupadas / total) * 100).toFixed(0) : 0;
 
   // --- Paleta de Colores ---
   const colores = {
     disponible: "#BFDAD6", // Verde muy claro
-    reservada: "#a6e8de",  // Verde claro
-    ocupada: "#0F5C4F",    // Verde oscuro
+    reservada: "#a6e8de", // Verde claro
+    ocupada: "#0F5C4F", // Verde oscuro
     textoOscuro: "#2F8F84",
-    blanco: "#ffffff"
+    blanco: "#ffffff",
   };
 
   const getEstiloEstado = (estado) => {
     switch (estado) {
-      case 'disponible': return { bg: colores.disponible, text: '#000' };
-      case 'ocupada': return { bg: colores.ocupada, text: '#fff' };
-      case 'reservada': return { bg: colores.reservada, text: '#000' };
-      default: return { bg: '#ccc', text: '#000' };
+      case "disponible":
+        return { bg: colores.disponible, text: "#000" };
+      case "ocupada":
+        return { bg: colores.ocupada, text: "#fff" };
+      case "reservada":
+        return { bg: colores.reservada, text: "#000" };
+      default:
+        return { bg: "#ccc", text: "#000" };
     }
   };
 
+  // --- Ordenar habitaciones por estado ---
+  // Prioridad: 1. disponible, 2. reservada, 3. cualquier otro (ocupada)
+  const habitacionesOrdenadas = habitaciones
+    ? [...habitaciones].sort((a, b) => {
+        const orden = { disponible: 1, reservada: 2, ocupada: 3 };
+        const pesoA = orden[a.estado] || 4;
+        const pesoB = orden[b.estado] || 4;
+        return pesoA - pesoB;
+      })
+    : [];
+
   return (
-    <div className="p-3" style={{ backgroundColor: "#f8f9fa", borderRadius: "15px" }}>
-      
+    <div
+      className="p-3"
+      style={{ backgroundColor: "#f8f9fa", borderRadius: "15px" }}
+    >
       {/* --- Sección de Resumen (Stats) --- */}
       <Row className="mb-4 g-3">
         <Col xs={12} sm={6} md={3}>
           <Card className="text-center border-0 shadow-sm h-100">
             <Card.Body>
-              <h6 className="text-muted small text-uppercase fw-bold">Ocupación</h6>
-              <h3 className="fw-bold mb-0" style={{ color: colores.ocupada }}>{tasaOcupacion}%</h3>
+              <h6 className="text-muted small text-uppercase fw-bold">
+                Ocupación
+              </h6>
+              <h3 className="fw-bold mb-0" style={{ color: colores.ocupada }}>
+                {tasaOcupacion}%
+              </h3>
             </Card.Body>
           </Card>
         </Col>
         <Col xs={12} sm={6} md={3}>
           <Card className="text-center border-0 shadow-sm h-100">
             <Card.Body>
-              <h6 className="text-muted small text-uppercase fw-bold">Disponibles</h6>
-              <h3 className="fw-bold mb-0" style={{ color: colores.textoOscuro }}>{disponibles}</h3>
+              <h6 className="text-muted small text-uppercase fw-bold">
+                Disponibles
+              </h6>
+              <h3
+                className="fw-bold mb-0"
+                style={{ color: colores.textoOscuro }}
+              >
+                {disponibles}
+              </h3>
             </Card.Body>
           </Card>
         </Col>
         <Col xs={12} sm={6} md={3}>
           <Card className="text-center border-0 shadow-sm h-100">
             <Card.Body>
-              <h6 className="text-muted small text-uppercase fw-bold">Ingresos (Ocupadas)</h6>
+              <h6 className="text-muted small text-uppercase fw-bold">
+                Ingresos (Ocupadas)
+              </h6>
               <h3 className="fw-bold mb-0" style={{ color: "#28a745" }}>
                 C$ {ingresosOcupadas.toLocaleString("es-NI")}
               </h3>
@@ -73,8 +106,12 @@ const TablaHabitaciones = ({
         <Col xs={12} sm={6} md={3}>
           <Card className="text-center border-0 shadow-sm h-100">
             <Card.Body>
-              <h6 className="text-muted small text-uppercase fw-bold">Reservadas</h6>
-              <h3 className="fw-bold mb-0" style={{ color: "#6c757d" }}>{reservadas}</h3>
+              <h6 className="text-muted small text-uppercase fw-bold">
+                Reservadas
+              </h6>
+              <h3 className="fw-bold mb-0" style={{ color: "#6c757d" }}>
+                {reservadas}
+              </h3>
             </Card.Body>
           </Card>
         </Col>
@@ -82,46 +119,49 @@ const TablaHabitaciones = ({
 
       {/* --- Cuadrícula de Habitaciones --- */}
       <h5 className="mb-3 fw-bold">Estado de habitaciones</h5>
-      {habitaciones && habitaciones.length > 0 ? (
+      {habitacionesOrdenadas && habitacionesOrdenadas.length > 0 ? (
         <Row className="g-3">
-          {habitaciones.map((habitacion) => {
+          {habitacionesOrdenadas.map((habitacion) => {
             const estilo = getEstiloEstado(habitacion.estado);
             return (
               <Col key={habitacion.id_habitacion} xs={6} sm={4} md={3} lg={2}>
-                <Card 
+                <Card
                   className="h-100 border-0 shadow-sm text-center"
-                  style={{ 
-                    backgroundColor: estilo.bg, 
+                  style={{
+                    backgroundColor: estilo.bg,
                     color: estilo.text,
                     transition: "transform 0.2s",
-                    borderRadius: "12px"
+                    borderRadius: "12px",
                   }}
                 >
                   <Card.Body className="d-flex flex-column justify-content-center align-items-center py-4">
                     <div className="fs-4 fw-bold mb-1">{habitacion.numero}</div>
-                    <div className="fw-bold text-uppercase mb-2" style={{ fontSize: '0.75rem', letterSpacing: '0.5px' }}>
+                    <div
+                      className="fw-bold text-uppercase mb-2"
+                      style={{ fontSize: "0.75rem", letterSpacing: "0.5px" }}
+                    >
                       {habitacion.estado}
                     </div>
-                    
+
                     <div className="small opacity-75 text-capitalize mb-3">
-                      {habitacion.tipo} <br/>
+                      {habitacion.tipo} <br />
                       C$ {parseFloat(habitacion.precio).toLocaleString("es-NI")}
                     </div>
-                    
+
                     {/* Botones de acción */}
                     <div className="d-flex gap-2">
-                      <Button 
-                        variant="light" 
-                        size="sm" 
+                      <Button
+                        variant="light"
+                        size="sm"
                         className="rounded-circle shadow-sm d-flex align-items-center justify-content-center"
                         style={{ width: "32px", height: "32px" }}
                         onClick={() => abrirModalEdicion(habitacion)}
                       >
                         <i className="bi bi-pencil text-dark"></i>
                       </Button>
-                      <Button 
-                        variant="light" 
-                        size="sm" 
+                      <Button
+                        variant="light"
+                        size="sm"
                         className="rounded-circle shadow-sm d-flex align-items-center justify-content-center"
                         style={{ width: "32px", height: "32px" }}
                         onClick={() => abrirModalEliminacion(habitacion)}
@@ -137,7 +177,9 @@ const TablaHabitaciones = ({
         </Row>
       ) : (
         <div className="text-center py-5">
-          <p className="text-muted">No hay habitaciones registradas para mostrar.</p>
+          <p className="text-muted">
+            No hay habitaciones registradas para mostrar.
+          </p>
         </div>
       )}
     </div>
