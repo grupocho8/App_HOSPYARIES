@@ -69,7 +69,7 @@ const Reservaciones = () => {
     setHabitaciones(resHabitaciones.data || []);
   };
 
-  const cargarReservaciones = async () => {
+const cargarReservaciones = async () => {
     try {
       setCargando(true);
       const { data, error } = await supabase
@@ -81,7 +81,7 @@ const Reservaciones = () => {
             apellido,
             cedula
           ),
-          habitaciones (
+          habitaciones!id_habitacion (
             numero,
             tipo
           )
@@ -98,7 +98,7 @@ const Reservaciones = () => {
       setCargando(false);
     }
   };
-
+  
   useEffect(() => {
     cargarDatosReferenciales();
     cargarReservaciones();
@@ -130,39 +130,47 @@ const Reservaciones = () => {
     setPaginaActual(1);
   }, [textoBusqueda, reservaciones]);
 
-  const agregarReservacion = async () => {
-    try {
-      const { error: errorReserva } = await supabase.from("reservaciones").insert([
-        {
-          id_reservacion: crypto.randomUUID(),
-          ...nuevaReservacion
-        }
-      ]);
-      if (errorReserva) throw errorReserva;
+const agregarReservacion = async () => {
+  try {
+    // Generamos el ID único antes para poder usarlo en ambas tablas
+    const idNuevaReservacion = crypto.randomUUID();
 
-      const { error: errorHabitacion } = await supabase
-        .from("habitaciones")
-        .update({ estado: "ocupada" }) 
-        .eq("id_habitacion", nuevaReservacion.id_habitacion);
+    // Insertar la reservación
+    const { error: errorReserva } = await supabase.from("reservaciones").insert([
+      {
+        id_reservacion: idNuevaReservacion,
+        ...nuevaReservacion
+      }
+    ]);
+    if (errorReserva) throw errorReserva;
 
-      if (errorHabitacion) throw errorHabitacion;
+    // Actualizar el estado de la habitación a 'ocupada' y guardar el ID de la reserva
+    const { error: errorHabitacion } = await supabase
+      .from("habitaciones")
+      .update({ 
+        estado: "ocupada",
+        id_reservacion_actual: idNuevaReservacion // 👈 Guardamos el enlace inverso
+      }) 
+      .eq("id_habitacion", nuevaReservacion.id_habitacion);
 
-      setToast({ mostrar: true, mensaje: "Reservación creada y habitación ocupada", tipo: "exito" });
-      setMostrarModal(false);
-      setNuevaReservacion({
-        id_cliente: "",
-        id_habitacion: "",
-        fecha_inicio: "",
-        fecha_fin: "",
-        estado: "Pendiente"
-      });
+    if (errorHabitacion) throw errorHabitacion;
 
-      cargarReservaciones();
-    } catch (err) {
-      console.error(err);
-      setToast({ mostrar: true, mensaje: "Error en la operación", tipo: "error" });
-    }
-  };
+    setToast({ mostrar: true, mensaje: "Reservación creada y habitación ocupada", tipo: "exito" });
+    setMostrarModal(false);
+    setNuevaReservacion({
+      id_cliente: "",
+      id_habitacion: "",
+      fecha_inicio: "",
+      fecha_fin: "",
+      estado: "Pendiente"
+    });
+
+    cargarReservaciones();
+  } catch (err) {
+    console.error(err);
+    setToast({ mostrar: true, mensaje: "Error en la operación", tipo: "error" });
+  }
+};
 
   const actualizarReservacion = async () => {
     try {
