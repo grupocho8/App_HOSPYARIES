@@ -3,12 +3,20 @@ import { useNavigate, useLocation } from "react-router-dom";
 import { Container, Nav, Navbar, Offcanvas, NavDropdown } from "react-bootstrap";
 import logo from "../../assets/logo_hospyaries.png"; 
 import { supabase } from "../../database/supabaseconfig";
+import { useAuth } from "../context/AuthContext";
 
 const Encabezado = () => {
 
   const [mostrarMenu, setMostrarMenu] = useState(false);
   const navigate = useNavigate();
   const location = useLocation(); //Para detectar la ruta actual
+const {
+  usuario,
+  logout,
+  tienePermiso,
+} = useAuth();
+
+const { permisos } = useAuth();
 
   const manejarToggle = () => setMostrarMenu(!mostrarMenu);
 
@@ -17,25 +25,29 @@ const Encabezado = () => {
     setMostrarMenu(false);
   };
 
-  const cerrarSesion = async () => {
-    try {
-      const { error } = await supabase.auth.signOut();
-      if (error) throw error;
+const cerrarSesion = async () => {
+  try {
 
-      localStorage.removeItem("usuario-supabase");
-      setMostrarMenu(false);
-      navigate("/login");
-    } catch (err) {
-      console.error("Error cerrando sesión: ", err.message);
-    }
-  };
+    await logout();
+
+    setMostrarMenu(false);
+
+    navigate("/login");
+
+  } catch (err) {
+
+    console.error(
+      "Error cerrando sesión:",
+      err
+    );
+  }
+};
 
   //Detectar rutas especiales
   const esLogin = location.pathname === "/login";
-  const esCatalogo = 
-    location.pathname === "/catalogo" &&
-    localStorage.getItem("usuario-supabase") === null;
-
+ const esCatalogo =
+  location.pathname === "/catalogo" &&
+  !usuario;
   //Contenido del menú
   let contenidoMenu;
 
@@ -85,13 +97,31 @@ const Encabezado = () => {
               <strong>Clientes</strong>
             </Nav.Link>
 
-            <Nav.Link
-              onClick={() => manejarNavegacion("/empleados")}
-              className={mostrarMenu ? "color-texto-marca" : "text-dark"}
-            >
-             {mostrarMenu ? <i className="bi-person-badge-fill me-2"></i> : null}
-              <strong>Empleados</strong>
-            </Nav.Link>
+        {tienePermiso("ver_empleados") && (
+  <Nav.Link
+    onClick={() => manejarNavegacion("/empleados")}
+    className={mostrarMenu ? "color-texto-marca" : "text-dark"}
+  >
+    {mostrarMenu ? (
+      <i className="bi-person-badge-fill me-2"></i>
+    ) : null}
+
+    <strong>Empleados</strong>
+  </Nav.Link>
+)}
+
+{tienePermiso("ver_permisos") && (
+  <Nav.Link
+    onClick={() => manejarNavegacion("/permisos")}
+    className={mostrarMenu ? "color-texto-marca" : "text-dark"}
+  >
+    {mostrarMenu ? (
+      <i className="bi-shield-lock-fill me-2"></i>
+    ) : null}
+
+    <strong>Permisos</strong>
+  </Nav.Link>
+)}
            
             <Nav.Link
               onClick={() => manejarNavegacion("/controlventas")}
@@ -129,7 +159,7 @@ const Encabezado = () => {
             <div className="mt-3 p-3 rounded bg-light text-dark">
               <p className="mb-2">
                 <i className="bi-envelope-fill me-2"></i>
-                {localStorage.getItem("usuario-supabase")?.toLowerCase() || "Usuario"}
+                {usuario?.email || usuario?.nombre_empleado || "Usuario"}
               </p>
 
               <button

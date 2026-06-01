@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import FormularioLogin from "../components/login/FormularioLogin";
+import { useAuth } from "../components/context/AuthContext";
 import { supabase } from "../database/supabaseconfig";
 import '../App.css';
 
@@ -9,36 +10,29 @@ const Login = () => {
   const [contrasena, setContrasena] = useState("");
   const [error, setError] = useState(null);
   const navegar = useNavigate();
+  const { login } = useAuth();
 
-  const iniciarSesion = async () => {
-    try {
-      const { data, error } = await supabase.auth.signInWithPassword({
-        email: usuario,
-        password: contrasena,
-      });
+const iniciarSesion = async () => {
+  try {
+    setError(null);
 
-      if (error) {
-        setError("Usuario o contraseña incorrectos");
-        return;
-      }
+    await login(usuario, contrasena);
 
-      if (data.user) {
-        localStorage.setItem("usuario-supabase", usuario);
-        navegar("/");
-      }
-    } catch (err) {
-      setError("Error al conectar con el servidor");
-      console.error("Error en la solicitud: ", err);
-    }
-  };
+    navegar("/");
+  } catch (err) {
+    setError("Usuario o contraseña incorrectos");
+    console.error(err);
+  }
+};
 
   // 1. Tu useEffect original (Redirección si ya hay sesión)
-  useEffect(() => {
-    const usuarioGuardado = localStorage.getItem("usuario-supabase");
-    if (usuarioGuardado) {
-      navegar("/");
-    }
-  }, [navegar]);
+ const { usuario: usuarioActivo } = useAuth();
+
+useEffect(() => {
+  if (usuarioActivo) {
+    navegar("/");
+  }
+}, [usuarioActivo, navegar]);
 
   // 2. NUEVO useEffect: Detector de tecla Enter
   useEffect(() => {
