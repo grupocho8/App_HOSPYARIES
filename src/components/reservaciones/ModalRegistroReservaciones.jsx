@@ -16,13 +16,13 @@ const ModalRegistroReservaciones = ({
   // 1. Preparar opciones para Clientes
   const opcionesClientes = clientes.map((c) => ({
     value: c.id_cliente,
-    label: c.nombre,
+    label: `${c.nombre} ${c.apellido || ''}`.trim(),
   }));
 
   // 2. Preparar opciones para Habitaciones
   const opcionesHabitaciones = habitaciones.map((h) => ({
     value: h.id_habitacion,
-    label: `Hab. ${h.numero}`,
+    label: `Hab. ${h.numero} - ${h.tipo || 'Sin tipo'}`,
   }));
 
   const manejoCambioInput = (e) => {

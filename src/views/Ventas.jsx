@@ -18,11 +18,13 @@ import ModalEdicionVenta from "../components/ventas/ModalEdicionVenta";
 import ModalEliminarVenta from "../components/ventas/ModalEliminarVenta";
 import ChatIA from "../components/chat/ChatIA";
 import TarjetaVenta from "../components/ventas/TarjetaVenta";
+import ModalDashboardVentas from "../components/ventas/ModalDashboardVentas";
 import Paginacion from "../components/ordenamiento/Paginacion"; 
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 
 const Ventas = () => {
+  const [mostrarDashboard, setMostrarDashboard] = useState(false);
   const [ventas, setVentas] = useState([]);
   const [ventasFiltradas, setVentasFiltradas] = useState([]);
   const [reservaciones, setReservaciones] = useState([]);
@@ -101,10 +103,12 @@ const cargarDatos = async () => {
         .select(
           `
           id_venta,
+          id_reservacion,
           monto,
           fecha,
 
           reservaciones (
+            estado,
             clientes (
               nombre,
               apellido
@@ -125,7 +129,17 @@ const cargarDatos = async () => {
         )
         .order("fecha", { ascending: false });
 
-      setReservaciones(resData || []);
+      // Extraer IDs de reservaciones que ya tienen una venta
+      const reservacionesConVenta = new Set(
+        (ventasData || []).map((v) => v.id_reservacion).filter(Boolean)
+      );
+
+      // Filtrar reservaciones disponibles (que NO están en reservacionesConVenta)
+      const reservacionesDisponibles = (resData || []).filter(
+        (r) => !reservacionesConVenta.has(r.id_reservacion)
+      );
+
+      setReservaciones(reservacionesDisponibles);
       setEmpleados(empData || []);
       setVentas(ventasData || []);
       setVentasFiltradas(ventasData || []);
@@ -309,166 +323,232 @@ const cargarDatos = async () => {
   // ==================== PDF INDIVIDUAL ====================
 
   const generarPDFIndividual = (v) => {
-    const doc = new jsPDF();
+    // Configuración tipo Voucher/Ticket (80mm ancho x 200mm alto)
+    const doc = new jsPDF({
+      orientation: "portrait",
+      unit: "mm",
+      format: [80, 200]
+    });
 
-    const clienteNombre = `${v.reservaciones?.clientes?.nombre || "N/A"} ${v.reservaciones?.clientes?.apellido || ""}`;
+    const generarCuerpoPDF = (img = null) => {
+      let y = 10;
 
-    doc.setFillColor(44, 108, 98);
+      // 1. Añadir logo si existe
+      if (img) {
+        doc.addImage(img, 'JPEG', 25, y, 30, 30);
+        y += 35;
+      } else {
+        y += 10;
+      }
 
-    doc.rect(0, 0, 220, 30, "F");
+      // 2. Encabezado del Hotel
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(14);
+      doc.text("HOTEL 2 ARIES", 40, y, { align: "center" });
+      
+      y += 5;
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(9);
+      doc.text("Tel: +505 8287-8481", 40, y, { align: "center" });
+      
+      y += 5;
+      doc.setLineDashPattern([2, 1], 0);
+      doc.line(5, y, 75, y); // Línea divisoria
+      doc.setLineDashPattern([], 0);
 
-    doc.setTextColor(255, 255, 255);
+      // 3. Título y Detalles Básicos
+      y += 8;
+      doc.setFontSize(11);
+      doc.setFont("helvetica", "bold");
+      doc.text("COMPROBANTE DE VENTA", 40, y, { align: "center" });
+      
+      y += 7;
+      doc.setFontSize(9);
+      doc.setFont("helvetica", "normal");
+      const fechaVenta = v.fecha ? new Date(v.fecha) : new Date();
+      doc.text(`Fecha: ${fechaVenta.toLocaleDateString()} ${fechaVenta.toLocaleTimeString()}`, 5, y);
+      
+      y += 5;
+      doc.text(`ID: ${v.id_venta.substring(0, 8).toUpperCase()}`, 5, y);
 
-    doc.setFontSize(20);
+      y += 5;
+      doc.setLineDashPattern([2, 1], 0);
+      doc.line(5, y, 75, y);
+      doc.setLineDashPattern([], 0);
 
-    doc.text("Comprobante de Venta", 105, 18, { align: "center" });
+      // 4. Datos del Cliente
+      y += 8;
+      const clienteNombre = `${v.reservaciones?.clientes?.nombre || "N/A"} ${v.reservaciones?.clientes?.apellido || ""}`.trim();
+      
+      doc.setFont("helvetica", "bold");
+      doc.text("DATOS DEL CLIENTE", 5, y);
+      
+      y += 5;
+      doc.setFont("helvetica", "normal");
+      doc.text(`Nombre: ${clienteNombre}`, 5, y);
+      
+      y += 5;
+      doc.text(`Habitación: N° ${v.reservaciones?.habitaciones?.numero}`, 5, y);
+      
+      y += 5;
+      doc.text(`Tipo: ${v.reservaciones?.habitaciones?.tipo}`, 5, y);
 
-    doc.setTextColor(0, 0, 0);
+      y += 5;
+      doc.setLineDashPattern([2, 1], 0);
+      doc.line(5, y, 75, y);
+      doc.setLineDashPattern([], 0);
 
-    doc.setFontSize(12);
+      // 5. Datos del Empleado
+      y += 8;
+      doc.text(`Atendido por: ${v.empleados?.nombre_empleado} ${v.empleados?.apellido_empleado}`, 5, y);
+      y += 5;
+      doc.text(`Turno: ${v.empleados?.tipo_turno === "dia" ? "Día" : "Noche"}`, 5, y);
 
-    doc.text(`Cliente: ${clienteNombre}`, 20, 50);
+      y += 5;
+      doc.setLineDashPattern([2, 1], 0);
+      doc.line(5, y, 75, y);
+      doc.setLineDashPattern([], 0);
 
-    doc.text(`Habitación: ${v.reservaciones?.habitaciones?.numero}`, 20, 60);
+      // 6. TOTAL
+      y += 10;
+      doc.setFontSize(12);
+      doc.setFont("helvetica", "bold");
+      doc.text("TOTAL:", 5, y);
+      doc.text(`C$ ${parseFloat(v.monto).toFixed(2)}`, 75, y, { align: "right" });
 
-    doc.text(`Tipo: ${v.reservaciones?.habitaciones?.tipo}`, 20, 70);
+      // 7. Pie de página
+      y += 15;
+      doc.setFontSize(8);
+      doc.setFont("helvetica", "normal");
+      doc.text("¡Gracias por su preferencia!", 40, y, { align: "center" });
+      doc.save(`Voucher_${clienteNombre.replace(/\s+/g, "_")}.pdf`);
+    };
 
-    doc.text(
-      `Empleado: ${v.empleados?.nombre_empleado} ${v.empleados?.apellido_empleado}`,
-      20,
-      80,
-    );
-
-    doc.text(
-      `Turno: ${v.empleados?.tipo_turno === "dia" ? "Día" : "Noche"}`,
-      20,
-      90,
-    );
-
-    doc.text(`Monto: C$ ${parseFloat(v.monto).toFixed(2)}`, 20, 100);
-
-    doc.text(
-      `Fecha: ${v.fecha ? new Date(v.fecha).toLocaleDateString() : "S/F"}`,
-      20,
-      110,
-    );
-
-    doc.save(`Venta_${clienteNombre}.pdf`);
+    // Intentar cargar el logo
+    const img = new Image();
+    img.src = '/LogoHospyAries.jpeg';
+    
+    img.onload = () => {
+      generarCuerpoPDF(img);
+    };
+    
+    img.onerror = () => {
+      // Si falla la carga del logo (por ej, ruta incorrecta), generar sin logo
+      generarCuerpoPDF(null);
+    };
   };
 
   // ==================== PDF GENERAL ====================
 
   const generarPDFVentas = () => {
+    // Reporte general en formato apaisado (landscape) o retrato (portrait). Usaremos A4 normal.
     const doc = new jsPDF();
 
-    // ==================== ENCABEZADO ====================
+    const generarCuerpoPDF = (img = null) => {
+      // ==================== ENCABEZADO (Banner Superior) ====================
+      doc.setFillColor(44, 108, 98);
+      doc.rect(0, 0, doc.internal.pageSize.getWidth(), 35, "F");
 
-    doc.setFillColor(44, 108, 98);
+      // Logo
+      if (img) {
+        doc.addImage(img, 'JPEG', 15, 5, 25, 25);
+      }
 
-    doc.rect(0, 0, 220, 30, "F");
+      // Nombre del Hotel y Contacto (Texto blanco sobre fondo verde)
+      doc.setTextColor(255, 255, 255);
+      doc.setFontSize(20);
+      doc.setFont("helvetica", "bold");
+      doc.text("HOTEL 2 ARIES", 50, 15);
 
-    doc.setTextColor(255, 255, 255);
+      doc.setFontSize(10);
+      doc.setFont("helvetica", "normal");
+      doc.text("Dirección: Ciudadela, del parque central 2c al sur.", 50, 22);
+      doc.text("Tel: +505 8287-8481 | Servicios: Hospedaje y Eventos", 50, 28);
 
-    doc.setFontSize(22);
+      // ==================== TÍTULO Y FECHA ====================
+      doc.setTextColor(44, 108, 98);
+      doc.setFontSize(16);
+      doc.setFont("helvetica", "bold");
+      doc.text("REPORTE GENERAL DE VENTAS", doc.internal.pageSize.getWidth() / 2, 50, { align: "center" });
 
-    doc.text(
-      "Reporte de Ventas - Hotel 2 Aries",
-      doc.internal.pageSize.getWidth() / 2,
-      18,
-      { align: "center" },
-    );
+      doc.setTextColor(90, 90, 90);
+      doc.setFontSize(10);
+      doc.setFont("helvetica", "normal");
+      doc.text(`Fecha de emisión: ${new Date().toLocaleDateString()}`, 14, 60);
 
-    // ==================== FECHA ====================
+      // ==================== TABLA ====================
+      const columnas = [
+        "#",
+        "Cliente",
+        "Hab.",
+        "Tipo",
+        "Empleado",
+        "Turno",
+        "Monto",
+        "Fecha",
+      ];
 
-    doc.setTextColor(90);
+      const filas = ventasFiltradas.map((v, index) => [
+        index + 1,
+        `${v.reservaciones?.clientes?.nombre || ""} ${v.reservaciones?.clientes?.apellido || ""}`.trim(),
+        v.reservaciones?.habitaciones?.numero || "—",
+        v.reservaciones?.habitaciones?.tipo || "—",
+        `${v.empleados?.nombre_empleado || ""} ${v.empleados?.apellido_empleado || ""}`.trim(),
+        v.empleados?.tipo_turno === "dia" ? "Día" : "Noche",
+        `C$ ${parseFloat(v.monto || 0).toFixed(2)}`,
+        v.fecha ? new Date(v.fecha).toLocaleDateString() : "S/F",
+      ]);
 
-    doc.setFontSize(11);
+      autoTable(doc, {
+        head: [columnas],
+        body: filas,
+        startY: 65,
+        theme: "grid",
+        headStyles: {
+          fillColor: [44, 108, 98],
+          textColor: [255, 255, 255],
+          fontStyle: "bold",
+          halign: "center",
+        },
+        styles: {
+          fontSize: 9,
+          cellPadding: 3,
+          valign: "middle",
+        },
+        alternateRowStyles: {
+          fillColor: [245, 245, 245],
+        },
+        didDrawPage: () => {
+          // ==================== TOTAL GENERAL (Pie de tabla) ====================
+          doc.setFontSize(11);
+          doc.setTextColor(44, 108, 98);
+          doc.setFont("helvetica", "bold");
+          doc.text(
+            `Total General Recaudado: C$ ${totalCalculado.toLocaleString("en-US", {
+              minimumFractionDigits: 2,
+            })}`,
+            14,
+            doc.internal.pageSize.getHeight() - 10,
+          );
+        },
+      });
 
-    doc.text(`Fecha de generación: ${new Date().toLocaleDateString()}`, 14, 40);
+      // ==================== GUARDAR ====================
+      const fecha = new Date().toISOString().split("T")[0];
+      doc.save(`Reporte_General_Ventas_${fecha}.pdf`);
+    };
 
-    // ==================== COLUMNAS ====================
-
-    const columnas = [
-      "#",
-      "Cliente",
-      "Hab.",
-      "Tipo",
-      "Empleado",
-      "Turno",
-      "Monto",
-      "Fecha",
-    ];
-
-    // ==================== FILAS ====================
-
-    const filas = ventasFiltradas.map((v, index) => [
-      index + 1,
-
-      `${v.reservaciones?.clientes?.nombre || ""} ${v.reservaciones?.clientes?.apellido || ""}`,
-
-      v.reservaciones?.habitaciones?.numero || "—",
-
-      v.reservaciones?.habitaciones?.tipo || "—",
-
-      `${v.empleados?.nombre_empleado || ""} ${v.empleados?.apellido_empleado || ""}`,
-
-      v.empleados?.tipo_turno === "dia" ? "Día" : "Noche",
-
-      `C$ ${parseFloat(v.monto || 0).toFixed(2)}`,
-
-      v.fecha ? new Date(v.fecha).toLocaleDateString() : "S/F",
-    ]);
-
-    // ==================== TABLA ====================
-
-    autoTable(doc, {
-      head: [columnas],
-
-      body: filas,
-
-      startY: 50,
-
-      theme: "grid",
-
-      headStyles: {
-        fillColor: [44, 108, 98],
-        textColor: [255, 255, 255],
-        fontStyle: "bold",
-        halign: "center",
-      },
-
-      styles: {
-        fontSize: 9,
-        cellPadding: 3,
-        valign: "middle",
-      },
-
-      alternateRowStyles: {
-        fillColor: [245, 245, 245],
-      },
-
-      didDrawPage: () => {
-        // TOTAL GENERAL
-
-        doc.setFontSize(11);
-
-        doc.setTextColor(44, 108, 98);
-
-        doc.text(
-          `Total General: C$ ${totalCalculado.toLocaleString("en-US", {
-            minimumFractionDigits: 2,
-          })}`,
-          14,
-          doc.internal.pageSize.getHeight() - 10,
-        );
-      },
-    });
-
-    // ==================== GUARDAR ====================
-
-    const fecha = new Date().toISOString().split("T")[0];
-
-    doc.save(`Reporte_Ventas_${fecha}.pdf`);
+    // Intentar cargar el logo
+    const img = new Image();
+    img.src = '/LogoHospyAries.jpeg';
+    
+    img.onload = () => {
+      generarCuerpoPDF(img);
+    };
+    
+    img.onerror = () => {
+      generarCuerpoPDF(null);
+    };
   };
 
   // ==================== TOTAL ====================
@@ -525,6 +605,12 @@ const cargarDatos = async () => {
                   flex-wrap
                 "
             >
+              {/* DASHBOARD */}
+              <Button variant="outline-primary" onClick={() => setMostrarDashboard(true)}>
+                <i className="bi bi-bar-chart-fill me-2"></i>
+                Ver Análisis
+              </Button>
+
               {/* PDF GENERAL */}
 
               <Button variant="outline-danger" onClick={generarPDFVentas}>
@@ -787,6 +873,13 @@ const cargarDatos = async () => {
       <ChatIA
         mostrarChatModal={mostrarChatModal}
         setMostrarChatModal={setMostrarChatModal}
+      />
+
+      {/* DASHBOARD VENTAS */}
+      <ModalDashboardVentas
+        mostrar={mostrarDashboard}
+        manejarCerrar={() => setMostrarDashboard(false)}
+        ventas={ventas}
       />
 
       {/* TOAST */}

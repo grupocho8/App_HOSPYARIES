@@ -10,7 +10,7 @@ const ModalEliminarReservaciones = ({
   return (
     <Modal show={mostrarModalEliminacion} onHide={() => setMostrarModalEliminacion(false)} centered>
       <Modal.Header closeButton>
-        <Modal.Title>Eliminar Registro</Modal.Title>
+        <Modal.Title>Confirmar Eliminación</Modal.Title>
       </Modal.Header>
       <Modal.Body>
         ¿Estás seguro de que deseas eliminar permanentemente la reservación del cliente 

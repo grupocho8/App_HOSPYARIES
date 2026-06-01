@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { Card, Badge, Row, Col } from "react-bootstrap";
 
-const TarjetaCatalogo = ({ habitación }) => {
+const TarjetaCatalogo = ({ habitación, onClick }) => {
   const [hover, setHover] = useState(false);
 
   // Colores para los estados
@@ -13,11 +13,13 @@ const TarjetaCatalogo = ({ habitación }) => {
 
   return (
     <Card
+      onClick={onClick}
       className={`border-0 shadow-sm overflow-hidden transition-all ${hover ? "shadow-lg" : ""}`}
       style={{
         borderRadius: "15px",
         transition: "all 0.3s ease",
         transform: hover ? "translateY(-5px)" : "none",
+        cursor: onClick ? "pointer" : "default",
       }}
       onMouseEnter={() => setHover(true)}
       onMouseLeave={() => setHover(false)}

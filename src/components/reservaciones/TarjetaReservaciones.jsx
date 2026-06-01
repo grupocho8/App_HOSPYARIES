@@ -2,7 +2,7 @@ import React from "react";
 import { Row, Col, Card, Badge, Button, OverlayTrigger, Tooltip } from "react-bootstrap";
 import "bootstrap-icons/font/bootstrap-icons.css";
 
-const TarjetaReservaciones = ({ reservaciones, abrirModalEdicion, abrirModalEliminacion }) => {
+const TarjetaReservaciones = ({ reservaciones, abrirModalEdicion, abrirModalEliminacion, generarPDFReservacion }) => {
   // Función para definir el color del Badge según el estado exacto de tu DB
   const obtenerColorEstado = (estado) => {
     switch (estado?.toLowerCase()) {
@@ -91,15 +91,24 @@ const TarjetaReservaciones = ({ reservaciones, abrirModalEdicion, abrirModalElim
               <hr className="text-muted opacity-15 mt-4 mb-3" />
 
               {/* ACCIONES Y DATOS TÉCNICOS SUTILES */}
-              <div className="d-flex justify-content-between align-items-center mt-3">
-                <small className="text-muted fw-mono" style={{ fontSize: '0.7rem' }}>
-                  ID: {res.id_reservacion.substring(0, 8).toUpperCase()}
-                </small>
+              <div className="d-flex justify-content-end align-items-center mt-3">
                 
                 <div className="d-flex gap-2">
+                  {/* BOTÓN PDF */}
+                  <OverlayTrigger placement="top" overlay={<Tooltip>Descargar comprobante</Tooltip>}>
+                    <Button 
+                      variant="light" 
+                      size="sm" 
+                      className="rounded-circle text-danger p-2 d-flex align-items-center justify-content-center" 
+                      style={{ width: '35px', height: '35px' }}
+                      onClick={() => generarPDFReservacion(res)}
+                    >
+                      <i className="bi bi-file-earmark-pdf-fill"></i>
+                    </Button>
+                  </OverlayTrigger>
+
                   {/* BOTÓN EDITAR */}
-                  <OverlayTrigger placement="top" overlay={<Tooltip>Editar reservación</Tooltip>
-}>
+                  <OverlayTrigger placement="top" overlay={<Tooltip>Editar reservación</Tooltip>}>
                     <Button 
                       variant="light" 
                       size="sm" 

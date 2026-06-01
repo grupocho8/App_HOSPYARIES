@@ -12,12 +12,14 @@ import TablaReservaciones from "../components/reservaciones/TablaReservaciones";
 import TarjetaReservaciones from "../components/reservaciones/TarjetaReservaciones";
 
 import Paginacion from "../components/ordenamiento/Paginacion"; // ✅ NUEVO
+import jsPDF from "jspdf";
 
 const Reservaciones = () => {
   const [reservaciones, setReservaciones] = useState([]);
   const [reservacionesFiltradas, setReservacionesFiltradas] = useState([]);
   const [clientes, setClientes] = useState([]);
   const [habitaciones, setHabitaciones] = useState([]);
+  
   const [textoBusqueda, setTextoBusqueda] = useState("");
   const [cargando, setCargando] = useState(true);
   const [vistaTarjetas, setVistaTarjetas] = useState(false);
@@ -34,6 +36,127 @@ const Reservaciones = () => {
     fecha_fin: "",
     estado: "activa"
   });
+
+  const cancelarBusqueda = () => {
+    setTextoBusqueda("");
+  };
+
+  const generarPDFReservacion = (res) => {
+    const doc = new jsPDF({
+      orientation: "portrait",
+      unit: "mm",
+      format: [80, 200]
+    });
+
+    const generarCuerpoPDF = (img = null) => {
+      let y = 10;
+      if (img) {
+        doc.addImage(img, 'JPEG', 25, y, 30, 30);
+        y += 35;
+      } else {
+        y += 10;
+      }
+
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(14);
+      doc.text("HOTEL 2 ARIES", 40, y, { align: "center" });
+      
+      y += 5;
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(9);
+      doc.text("Tel: +505 8287-8481", 40, y, { align: "center" });
+      
+      y += 5;
+      doc.setLineDashPattern([2, 1], 0);
+      doc.line(5, y, 75, y); 
+      doc.setLineDashPattern([], 0);
+
+      y += 8;
+      doc.setFontSize(11);
+      doc.setFont("helvetica", "bold");
+      doc.text("COMPROBANTE DE RESERVA", 40, y, { align: "center" });
+      
+      y += 7;
+      doc.setFontSize(9);
+      doc.setFont("helvetica", "normal");
+      const fechaActual = new Date();
+      doc.text(`Generado: ${fechaActual.toLocaleDateString()} ${fechaActual.toLocaleTimeString()}`, 5, y);
+      
+      y += 5;
+      doc.text(`ID: ${res.id_reservacion.substring(0, 8).toUpperCase()}`, 5, y);
+
+      y += 5;
+      doc.setLineDashPattern([2, 1], 0);
+      doc.line(5, y, 75, y);
+      doc.setLineDashPattern([], 0);
+
+      y += 8;
+      const clienteNombre = `${res.clientes?.nombre || "N/A"} ${res.clientes?.apellido || ""}`.trim();
+      
+      doc.setFont("helvetica", "bold");
+      doc.text("DATOS DEL CLIENTE", 5, y);
+      
+      y += 5;
+      doc.setFont("helvetica", "normal");
+      doc.text(`Nombre: ${clienteNombre}`, 5, y);
+      
+      y += 5;
+      doc.text(`Cédula: ${res.clientes?.cedula || "N/A"}`, 5, y);
+      
+      y += 5;
+      doc.setLineDashPattern([2, 1], 0);
+      doc.line(5, y, 75, y);
+      doc.setLineDashPattern([], 0);
+
+      y += 8;
+      doc.setFont("helvetica", "bold");
+      doc.text("DATOS DE LA HABITACIÓN", 5, y);
+
+      y += 5;
+      doc.setFont("helvetica", "normal");
+      doc.text(`Habitación: N° ${res.habitaciones?.numero}`, 5, y);
+      
+      y += 5;
+      doc.text(`Tipo: ${res.habitaciones?.tipo}`, 5, y);
+
+      y += 5;
+      doc.text(`Inicio de la estancia: ${new Date(res.fecha_inicio).toLocaleDateString()}`, 5, y);
+
+      y += 5;
+      doc.text(`Fin de la estancia: ${new Date(res.fecha_fin).toLocaleDateString()}`, 5, y);
+
+      y += 5;
+      doc.text(`Estado: ${res.estado.toUpperCase()}`, 5, y);
+
+      y += 5;
+      doc.setLineDashPattern([2, 1], 0);
+      doc.line(5, y, 75, y);
+      doc.setLineDashPattern([], 0);
+
+      y += 15;
+      doc.setFontSize(8);
+      doc.setFont("helvetica", "normal");
+      doc.text("¡Gracias por preferirnos!", 40, y, { align: "center" });
+      
+      y += 4;
+      doc.text("Este comprobante garantiza su", 40, y, { align: "center" });
+      y += 4;
+      doc.text("estadía en nuestro hotel.", 40, y, { align: "center" });
+
+      doc.save(`Reserva_${clienteNombre.replace(/\s+/g, "_")}.pdf`);
+    };
+
+    const img = new Image();
+    img.src = '/LogoHospyAries.jpeg';
+    
+    img.onload = () => {
+      generarCuerpoPDF(img);
+    };
+    
+    img.onerror = () => {
+      generarCuerpoPDF(null);
+    };
+  };
 
   const [reservacionEditar, setReservacionEditar] = useState(null);
   const [reservacionAEliminar, setReservacionAEliminar] = useState(null);
@@ -58,11 +181,11 @@ const Reservaciones = () => {
   };
 
   const cargarDatosReferenciales = async () => {
-    const resClientes = await supabase.from("clientes").select("id_cliente, nombre");
+    const resClientes = await supabase.from("clientes").select("id_cliente, nombre, apellido");
 
     const resHabitaciones = await supabase
       .from("habitaciones")
-      .select("id_habitacion, numero")
+      .select("id_habitacion, numero, tipo")
       .eq("estado", "disponible");
 
     setClientes(resClientes.data || []);
@@ -130,47 +253,53 @@ const cargarReservaciones = async () => {
     setPaginaActual(1);
   }, [textoBusqueda, reservaciones]);
 
-const agregarReservacion = async () => {
-  try {
-    // Generamos el ID único antes para poder usarlo en ambas tablas
-    const idNuevaReservacion = crypto.randomUUID();
+  const agregarReservacion = async () => {
+    try {
+      // Generamos el ID único antes para poder usarlo en ambas tablas
+      const idNuevaReservacion = crypto.randomUUID();
 
-    // Insertar la reservación
-    const { error: errorReserva } = await supabase.from("reservaciones").insert([
-      {
-        id_reservacion: idNuevaReservacion,
-        ...nuevaReservacion
+      // Insertar la reservación
+      const { error: errorReserva } = await supabase.from("reservaciones").insert([
+        {
+          id_reservacion: idNuevaReservacion,
+          ...nuevaReservacion
+        }
+      ]);
+      if (errorReserva) throw errorReserva;
+
+      // Determinar el nuevo estado de la habitación
+      let estadoHabitacionNuevo = "reservada";
+      if (nuevaReservacion.estado === "finalizada" || nuevaReservacion.estado === "cancelada") {
+        estadoHabitacionNuevo = "disponible";
       }
-    ]);
-    if (errorReserva) throw errorReserva;
 
-    // Actualizar el estado de la habitación a 'ocupada' y guardar el ID de la reserva
-    const { error: errorHabitacion } = await supabase
-      .from("habitaciones")
-      .update({ 
-        estado: "ocupada",
-        id_reservacion_actual: idNuevaReservacion // 👈 Guardamos el enlace inverso
-      }) 
-      .eq("id_habitacion", nuevaReservacion.id_habitacion);
+      // Actualizar el estado de la habitación
+      const { error: errorHabitacion } = await supabase
+        .from("habitaciones")
+        .update({ 
+          estado: estadoHabitacionNuevo,
+          id_reservacion_actual: estadoHabitacionNuevo === "disponible" ? null : idNuevaReservacion // Guardamos el enlace inverso si está activa
+        }) 
+        .eq("id_habitacion", nuevaReservacion.id_habitacion);
 
-    if (errorHabitacion) throw errorHabitacion;
+      if (errorHabitacion) throw errorHabitacion;
 
-    setToast({ mostrar: true, mensaje: "Reservación creada y habitación ocupada", tipo: "exito" });
-    setMostrarModal(false);
-    setNuevaReservacion({
-      id_cliente: "",
-      id_habitacion: "",
-      fecha_inicio: "",
-      fecha_fin: "",
-      estado: "Pendiente"
-    });
+      setToast({ mostrar: true, mensaje: "Reservación creada y habitación actualizada", tipo: "exito" });
+      setMostrarModal(false);
+      setNuevaReservacion({
+        id_cliente: "",
+        id_habitacion: "",
+        fecha_inicio: "",
+        fecha_fin: "",
+        estado: "activa"
+      });
 
-    cargarReservaciones();
-  } catch (err) {
-    console.error(err);
-    setToast({ mostrar: true, mensaje: "Error en la operación", tipo: "error" });
-  }
-};
+      cargarReservaciones();
+    } catch (err) {
+      console.error(err);
+      setToast({ mostrar: true, mensaje: "Error en la operación", tipo: "error" });
+    }
+  };
 
   const actualizarReservacion = async () => {
     try {
@@ -185,7 +314,7 @@ const agregarReservacion = async () => {
 
       if (errorReserva) throw errorReserva;
 
-      let nuevoEstadoHabitacion = "ocupada";
+      let nuevoEstadoHabitacion = "reservada";
 
       if (reservacionEditar.estado === "finalizada" || reservacionEditar.estado === "cancelada") {
         nuevoEstadoHabitacion = "disponible";
@@ -293,6 +422,7 @@ return (
             reservaciones={reservacionesPaginadas}
             abrirModalEdicion={abrirModalEdicion}
             abrirModalEliminacion={abrirModalEliminacion}
+            generarPDFReservacion={generarPDFReservacion}
           />
         </Col>
 
@@ -302,6 +432,7 @@ return (
             reservaciones={reservacionesPaginadas}
             abrirModalEdicion={abrirModalEdicion}
             abrirModalEliminacion={abrirModalEliminacion}
+            generarPDFReservacion={generarPDFReservacion}
             paginaActual={paginaActual}
             registrosPorPagina={registrosPorPagina}
           />

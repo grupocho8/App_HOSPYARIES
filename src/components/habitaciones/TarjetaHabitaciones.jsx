@@ -39,6 +39,17 @@ const TablaHabitaciones = ({
     }
   };
 
+  // --- Ordenar habitaciones por estado ---
+  // Prioridad: 1. disponible, 2. reservada, 3. cualquier otro (ocupada)
+  const habitacionesOrdenadas = habitaciones
+    ? [...habitaciones].sort((a, b) => {
+        const orden = { disponible: 1, reservada: 2, ocupada: 3 };
+        const pesoA = orden[a.estado] || 4;
+        const pesoB = orden[b.estado] || 4;
+        return pesoA - pesoB;
+      })
+    : [];
+
   return (
     <div className="p-3" style={{ backgroundColor: "#f8f9fa", borderRadius: "15px" }}>
       
@@ -82,9 +93,9 @@ const TablaHabitaciones = ({
 
       {/* --- Cuadrícula de Habitaciones (Sin imágenes) --- */}
       <h5 className="mb-3 fw-bold">Estado de habitaciones</h5>
-      {habitaciones && habitaciones.length > 0 ? (
+      {habitacionesOrdenadas && habitacionesOrdenadas.length > 0 ? (
         <Row className="g-2 g-md-3">
-          {habitaciones.map((habitacion) => {
+          {habitacionesOrdenadas.map((habitacion) => {
             const estilo = getEstiloEstado(habitacion.estado);
             return (
               <Col key={habitacion.id_habitacion} xs={6} sm={4} md={3} lg={2}>

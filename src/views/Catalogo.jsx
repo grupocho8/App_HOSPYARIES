@@ -3,12 +3,20 @@ import { Row, Col, Spinner, Alert, Form, Container } from "react-bootstrap";
 import { supabase } from "../database/supabaseconfig";
 import TarjetaCatalogo from "../components/catalogo/TarjetaCatalogo";
 import CuadroBusquedas from "../components/busquedas/CuadroBusquedas";
+import ModalInfoHabitacion from "../components/catalogo/ModalInfoHabitacion";
 
 const Catalogo = () => {
   const [habitaciones, setHabitaciones] = useState([]);
   const [textoBusqueda, setTextoBusqueda] = useState("");
   const [filtroEstado, setFiltroEstado] = useState("todos");
   const [cargando, setCargando] = useState(true);
+  const [habitacionSeleccionada, setHabitacionSeleccionada] = useState(null);
+  const [mostrarModal, setMostrarModal] = useState(false);
+
+  const abrirModal = (hab) => {
+    setHabitacionSeleccionada(hab);
+    setMostrarModal(true);
+  };
 
   const cargarDatos = async () => {
     try {
@@ -92,11 +100,17 @@ const Catalogo = () => {
         <Row className="g-4">
           {habitacionesFiltradas.map((hab) => (
             <Col xs={12} key={hab.id_habitacion}>
-              <TarjetaCatalogo habitación={hab} />
+              <TarjetaCatalogo habitación={hab} onClick={() => abrirModal(hab)} />
             </Col>
           ))}
         </Row>
       )}
+
+      <ModalInfoHabitacion 
+        mostrar={mostrarModal} 
+        manejarCerrar={() => setMostrarModal(false)} 
+        habitacion={habitacionSeleccionada} 
+      />
     </Container>
   );
 };

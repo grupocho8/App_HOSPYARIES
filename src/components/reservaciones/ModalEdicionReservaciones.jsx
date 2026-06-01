@@ -36,7 +36,7 @@ const ModalEdicionReservaciones = ({
       centered
     >
       <Modal.Header closeButton>
-        <Modal.Title>Modificar Reservación</Modal.Title>
+        <Modal.Title>Editar Reservación</Modal.Title>
       </Modal.Header>
 
       <Modal.Body>
@@ -44,8 +44,8 @@ const ModalEdicionReservaciones = ({
           {/* Información superior */}
           <div className="mb-4 text-center">
             <h6 className="fw-bold text-muted">
-              Habitación {reservacionEditar.habitaciones?.numero} —{" "}
-              {reservacionEditar.clientes?.nombre}
+              Habitación {reservacionEditar.habitaciones?.numero} ({reservacionEditar.habitaciones?.tipo || 'N/A'}) —{" "}
+              {reservacionEditar.clientes?.nombre} {reservacionEditar.clientes?.apellido || ''}
             </h6>
           </div>
 

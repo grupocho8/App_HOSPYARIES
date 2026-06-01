@@ -6,6 +6,7 @@ const TablaReservaciones = ({
   reservaciones,
   abrirModalEdicion,
   abrirModalEliminacion,
+  generarPDFReservacion,
   paginaActual, // ✅ NUEVO
   registrosPorPagina, // ✅ NUEVO
 }) => {
@@ -74,20 +75,33 @@ const TablaReservaciones = ({
 
                 <td className="text-center">
                   <Button
+                    variant="outline-danger"
+                    size="sm"
+                    className="me-1 border-0"
+                    onClick={() => generarPDFReservacion(res)}
+                    title="Descargar Comprobante"
+                  >
+                    <i className="bi bi-file-earmark-pdf fs-6"></i>
+                  </Button>
+
+                  <Button
                     variant="outline-warning"
                     size="sm"
-                    className="me-1"
+                    className="me-1 border-0"
                     onClick={() => abrirModalEdicion(res)}
+                    title="Editar"
                   >
-                    <i className="bi bi-pencil"></i>
+                    <i className="bi bi-pencil fs-6"></i>
                   </Button>
 
                   <Button
                     variant="outline-danger"
                     size="sm"
+                    className="border-0"
                     onClick={() => abrirModalEliminacion(res)}
+                    title="Eliminar"
                   >
-                    <i className="bi bi-trash"></i>
+                    <i className="bi bi-trash fs-6"></i>
                   </Button>
                 </td>
               </tr>
