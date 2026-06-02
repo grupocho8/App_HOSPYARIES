@@ -8,6 +8,7 @@ const TarjetaVenta = ({
   setShowEditar,
   setShowEliminar,
   generarPDFIndividual,
+  imprimirTicketRawbt,
 }) => {
   return (
     <Card
@@ -171,6 +172,21 @@ const TarjetaVenta = ({
           >
             <i className="bi bi-file-earmark-pdf me-1"></i>
             PDF
+          </Button>
+
+          <Button
+            className="border-0 flex-fill"
+            style={{
+              borderRadius: "12px",
+              fontSize: "0.85rem",
+              padding: "10px",
+              backgroundColor: "#17a2b8",
+              color: "#fff",
+            }}
+            onClick={() => imprimirTicketRawbt(v)}
+          >
+            <i className="bi bi-printer me-1"></i>
+            Ticket
           </Button>
 
           <Button

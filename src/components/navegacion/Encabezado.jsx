@@ -4,6 +4,7 @@ import { Container, Nav, Navbar, Offcanvas, NavDropdown } from "react-bootstrap"
 import logo from "../../assets/logo_hospyaries.png"; 
 import { supabase } from "../../database/supabaseconfig";
 import { useAuth } from "../context/AuthContext";
+import InstallPWAButton from "../InstallPWAButton";
 
 const Encabezado = () => {
 
@@ -143,12 +144,17 @@ const cerrarSesion = async () => {
 
             {/*Icono cerrar sesión en barra superior */}
             {mostrarMenu ? null : (
-              <Nav.Link
-                onClick={cerrarSesion}
-                className={mostrarMenu ? "color-texto-marca" : "text-dark"}
-              >
-                <i className="bi-box-arrow-right me-2"></i>
-              </Nav.Link>
+              <>
+                <div className="d-flex align-items-center me-2">
+                  <InstallPWAButton />
+                </div>
+                <Nav.Link
+                  onClick={cerrarSesion}
+                  className="text-dark d-flex align-items-center"
+                >
+                  <i className="bi-box-arrow-right fs-5"></i>
+                </Nav.Link>
+              </>
             )}
 
             <hr />
@@ -169,6 +175,8 @@ const cerrarSesion = async () => {
                 <i className="bi-box-arrow-right me-2"></i>
                 Cerrar sesión
               </button>
+
+              <InstallPWAButton isMobile={true} />
             </div>
           )}
         </>

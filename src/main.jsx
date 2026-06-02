@@ -7,6 +7,11 @@ import "bootstrap-icons/font/bootstrap-icons.css";
 import "./index.css";
 import App from "./App.jsx";
 
+import { registerSW } from 'virtual:pwa-register'
+if ('serviceWorker' in navigator) {
+  registerSW({ immediate: true })
+}
+
 import { AuthProvider } from "./components/context/AuthContext";
 
 createRoot(document.getElementById("root")).render(

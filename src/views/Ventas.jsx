@@ -438,6 +438,54 @@ const cargarDatos = async () => {
     };
   };
 
+  // ==================== PDF INDIVIDUAL ====================
+
+  const imprimirTicketRawbt = (venta) => {
+    const clienteNombre = `${venta.reservaciones?.clientes?.nombre || "N/A"} ${venta.reservaciones?.clientes?.apellido || ""}`.trim();
+
+    const fechaVenta = venta.fecha ? new Date(venta.fecha) : new Date();
+    const fecha = fechaVenta.toLocaleString("es-NI", {
+      year: "2-digit",
+      month: "2-digit",
+      day: "2-digit",
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+
+    const numeroVenta = venta.id_venta ? venta.id_venta.substring(0, 8).toUpperCase() : "-";
+    const total = parseFloat(venta.monto || 0).toFixed(2);
+    const empleadoNombre = `${venta.empleados?.nombre_empleado || ""} ${venta.empleados?.apellido_empleado || ""}`.trim();
+    const habitacionNumero = venta.reservaciones?.habitaciones?.numero || "-";
+    const habitacionTipo = venta.reservaciones?.habitaciones?.tipo || "-";
+    const turno = venta.empleados?.tipo_turno === "dia" ? "Día" : "Noche";
+
+    let detalleTexto = "DATOS DE RESERVACION:\n";
+    detalleTexto += `Habitacion N. ${habitacionNumero}\n`;
+    detalleTexto += `Tipo: ${habitacionTipo}\n`;
+    detalleTexto += `Atendido por: ${empleadoNombre}\n`;
+    detalleTexto += `Turno: ${turno}\n`;
+
+    const texto = `
+HOTEL 2 ARIES
+Tel: +505 8287-8481
+================================
+COMPROBANTE DE VENTA
+================================
+Ticket #${numeroVenta}
+Cliente: ${clienteNombre}
+Fecha: ${fecha}
+================================
+${detalleTexto}
+================================
+TOTAL: C$${total}
+================================
+Gracias por su preferencia!
+`;
+
+    const encoded = encodeURIComponent(texto);
+    window.location.href = `rawbt:${encoded}`;
+  };
+
   // ==================== PDF GENERAL ====================
 
   const generarPDFVentas = () => {
@@ -761,6 +809,17 @@ const cargarDatos = async () => {
                       {/* ACCIONES */}
 
                       <td>
+                        {/* RAWBT TICKET */}
+
+                        <Button
+                          variant="link"
+                          className="text-info p-1"
+                          onClick={() => imprimirTicketRawbt(v)}
+                          title="Imprimir Ticket Bluetooth"
+                        >
+                          <i className="bi bi-printer fs-5"></i>
+                        </Button>
+
                         {/* PDF */}
 
                         <Button
@@ -837,6 +896,7 @@ const cargarDatos = async () => {
                 setShowEliminar={setShowEliminar}
                 setVentaSeleccionada={setVentaSeleccionada}
                 generarPDFIndividual={generarPDFIndividual}
+                imprimirTicketRawbt={imprimirTicketRawbt}
               />
             ))}
           </div>
