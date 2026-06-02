@@ -8,24 +8,14 @@ async function run() {
   try {
     await client.connect();
     
-    // Buscar a Heidy en auth.users
-    const res = await client.query("SELECT id, email FROM auth.users WHERE email ILIKE '%heidy%';");
+    console.log("Confirmando correos electrónicos pendientes en auth.users...");
+    const result = await client.query(`
+      UPDATE auth.users 
+      SET email_confirmed_at = NOW() 
+      WHERE email_confirmed_at IS NULL;
+    `);
     
-    if (res.rows.length === 0) {
-      console.log("No se encontró ningún usuario con 'heidy' en el correo.");
-      return;
-    }
-    
-    for (let user of res.rows) {
-      console.log(`Usuario encontrado: ${user.email} (ID: ${user.id})`);
-      // Insertar o actualizar el rol en perfiles
-      await client.query(`
-        INSERT INTO public.perfiles (id, rol) 
-        VALUES ($1, 'empleado') 
-        ON CONFLICT (id) DO UPDATE SET rol = 'empleado';
-      `, [user.id]);
-      console.log(`✅ Rol de empleado asignado exitosamente a ${user.email}`);
-    }
+    console.log(`✅ Se confirmaron ${result.rowCount} usuarios.`);
     
   } catch (err) {
     console.error("Error al ejecutar el script:", err);

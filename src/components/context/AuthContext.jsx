@@ -35,25 +35,40 @@ export const AuthProvider = ({ children }) => {
           .from("empleados")
           .select("*")
           .eq("email", session.user.email)
-          .single();
+          .maybeSingle();
+
+        let usuarioData = empleado;
+        let esCliente = false;
 
         if (!empleado) {
-          setLoading(false);
-          return;
+          const { data: cliente } = await supabase
+            .from("clientes")
+            .select("*")
+            .eq("email", session.user.email)
+            .maybeSingle();
+
+          if (!cliente) {
+            setLoading(false);
+            return;
+          }
+          usuarioData = { ...cliente, rol: "cliente" };
+          esCliente = true;
         }
 
-        const { data: permisosRol } = await supabase
-          .from("permisos")
-          .select("permisos")
-          .eq("rol", empleado.tipo_empleado)
-          .single();
+        if (!esCliente) {
+          const { data: permisosRol } = await supabase
+            .from("permisos")
+            .select("permisos")
+            .eq("rol", empleado.tipo_empleado)
+            .single();
 
-        setUsuario(empleado);
+          setPermisos(permisosRol?.permisos || {});
+          console.log("PERMISOS CARGADOS:", permisosRol);
+        } else {
+          setPermisos({});
+        }
 
-        setPermisos(
-          permisosRol?.permisos || {}
-        );
-        console.log("PERMISOS CARGADOS:", permisosRol);
+        setUsuario(usuarioData);
 
       } catch (error) {
 
@@ -91,32 +106,46 @@ export const AuthProvider = ({ children }) => {
         .from("empleados")
         .select("*")
         .eq("email", email)
-        .single();
+        .maybeSingle();
+
+    let usuarioData = empleado;
+    let esCliente = false;
 
     if (!empleado) {
+      const { data: cliente } = await supabase
+        .from("clientes")
+        .select("*")
+        .eq("email", email)
+        .maybeSingle();
 
-      throw new Error(
-        "Empleado no encontrado"
-      );
+      if (!cliente) {
+        throw new Error(
+          "Usuario no encontrado"
+        );
+      }
+      usuarioData = { ...cliente, rol: "cliente" };
+      esCliente = true;
     }
 
-    const { data: permisosRol } =
-      await supabase
-        .from("permisos")
-        .select("permisos")
-        .eq(
-          "rol",
-          empleado.tipo_empleado
-        )
-        .single();
+    if (!esCliente) {
+      const { data: permisosRol } =
+        await supabase
+          .from("permisos")
+          .select("permisos")
+          .eq(
+            "rol",
+            empleado.tipo_empleado
+          )
+          .single();
 
-    setUsuario(empleado);
+      setPermisos(permisosRol?.permisos || {});
+    } else {
+      setPermisos({});
+    }
 
-    setPermisos(
-      permisosRol?.permisos || {}
-    );
+    setUsuario(usuarioData);
 
-    return empleado;
+    return usuarioData;
   };
 
   // LOGOUT

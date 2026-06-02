@@ -77,6 +77,7 @@ const cargarDatos = async () => {
       // 1. Carga de Reservaciones (Se corrigió habitaciones!id_habitacion)
       const { data: resData } = await supabase.from("reservaciones").select(`
           id_reservacion,
+          estado,
           clientes (
             nombre,
             apellido
@@ -85,7 +86,7 @@ const cargarDatos = async () => {
             numero,
             tipo
           )
-        `);
+        `).eq('estado', 'finalizada');
 
       const { data: empData } = await supabase
         .from("empleados")

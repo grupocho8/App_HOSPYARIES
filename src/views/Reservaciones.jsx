@@ -13,8 +13,10 @@ import TarjetaReservaciones from "../components/reservaciones/TarjetaReservacion
 
 import Paginacion from "../components/ordenamiento/Paginacion"; // ✅ NUEVO
 import jsPDF from "jspdf";
+import { useAuth } from "../components/context/AuthContext";
 
 const Reservaciones = () => {
+  const { usuario } = useAuth();
   const [reservaciones, setReservaciones] = useState([]);
   const [reservacionesFiltradas, setReservacionesFiltradas] = useState([]);
   const [clientes, setClientes] = useState([]);
@@ -195,7 +197,7 @@ const Reservaciones = () => {
 const cargarReservaciones = async () => {
     try {
       setCargando(true);
-      const { data, error } = await supabase
+      let query = supabase
         .from("reservaciones")
         .select(`
           *,
@@ -210,6 +212,12 @@ const cargarReservaciones = async () => {
           )
         `)
         .order("fecha_creacion", { ascending: false });
+
+      if (usuario?.rol === "cliente") {
+        query = query.eq("id_cliente", usuario.id_cliente);
+      }
+
+      const { data, error } = await query;
 
       if (error) throw error;
 
@@ -359,6 +367,30 @@ const cargarReservaciones = async () => {
     }
   };
 
+  const cancelarReservacionCliente = async () => {
+    try {
+      const idHabitacionLiberar = reservacionAEliminar.id_habitacion;
+
+      const { error: errorReserva } = await supabase
+        .from("reservaciones")
+        .update({ estado: "cancelada" })
+        .eq("id_reservacion", reservacionAEliminar.id_reservacion);
+
+      if (errorReserva) throw errorReserva;
+
+      await supabase
+        .from("habitaciones")
+        .update({ estado: "disponible", id_reservacion_actual: null })
+        .eq("id_habitacion", idHabitacionLiberar);
+
+      setToast({ mostrar: true, mensaje: "Reservación cancelada exitosamente", tipo: "exito" });
+      setMostrarModalEliminacion(false);
+      cargarReservaciones();
+    } catch (err) {
+      setToast({ mostrar: true, mensaje: "Error al cancelar la reservación", tipo: "error" });
+    }
+  };
+
   const abrirModalEdicion = (res) => {
     setReservacionEditar(res);
     setMostrarModalEdicion(true);
@@ -379,21 +411,23 @@ return (
          </Col>
 
                <Col xs={3} sm={5} md={5} lg={5} className="text-end">
-                 <Button
-                   onClick={() =>
-                     setMostrarModal(
-                       true
-                     )
-                   }
-                   size="md"
-                   className="color-navbar border-0"
-                 >
-                   <i className="bi-plus-lg"></i>
-       
-                   <span className="d-none d-sm-inline ms-2">
-                     Nueva Reservación
-                   </span>
-                 </Button>
+                 {usuario?.rol !== "cliente" && (
+                   <Button
+                     onClick={() =>
+                       setMostrarModal(
+                         true
+                       )
+                     }
+                     size="md"
+                     className="color-navbar border-0"
+                   >
+                     <i className="bi-plus-lg"></i>
+         
+                     <span className="d-none d-sm-inline ms-2">
+                       Nueva Reservación
+                     </span>
+                   </Button>
+                 )}
                </Col>
       </Row>
     </div>
@@ -423,6 +457,7 @@ return (
             abrirModalEdicion={abrirModalEdicion}
             abrirModalEliminacion={abrirModalEliminacion}
             generarPDFReservacion={generarPDFReservacion}
+            esCliente={usuario?.rol === "cliente"}
           />
         </Col>
 
@@ -435,6 +470,7 @@ return (
             generarPDFReservacion={generarPDFReservacion}
             paginaActual={paginaActual}
             registrosPorPagina={registrosPorPagina}
+            esCliente={usuario?.rol === "cliente"}
           />
         </Col>
       </Row>
@@ -475,6 +511,8 @@ return (
       setMostrarModalEliminacion={setMostrarModalEliminacion}
       reservacionEliminar={reservacionAEliminar}
       eliminarReservacion={eliminarReservacion}
+      cancelarReservacionCliente={cancelarReservacionCliente}
+      esCliente={usuario?.rol === "cliente"}
     />
 
     <NotificacionOperacion

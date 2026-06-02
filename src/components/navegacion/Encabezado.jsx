@@ -81,56 +81,72 @@ const cerrarSesion = async () => {
       contenidoMenu = (
         <>
           <Nav className="ms-auto pe-2">
-            <Nav.Link
-              onClick={() => manejarNavegacion("/")}
-              className={mostrarMenu ? "color-texto-marca" : "text-dark"}
-            >
-              {mostrarMenu ? <i className="bi-house-fill me-2"></i> : null}
-              <strong>Inicio</strong>
-            </Nav.Link>
+            {usuario?.rol !== 'cliente' && (
+              <Nav.Link
+                onClick={() => manejarNavegacion("/")}
+                className={mostrarMenu ? "color-texto-marca" : "text-dark"}
+              >
+                {mostrarMenu ? <i className="bi-house-fill me-2"></i> : null}
+                <strong>Inicio</strong>
+              </Nav.Link>
+            )}
+
+            {usuario?.rol === 'cliente' && (
+              <Nav.Link
+                onClick={() => manejarNavegacion("/reservaciones")}
+                className={mostrarMenu ? "color-texto-marca" : "text-dark"}
+              >
+                {mostrarMenu ? <i className="bi-calendar-check-fill me-2"></i> : null}
+                <strong>Mis Reservas</strong>
+              </Nav.Link>
+            )}
 
             {/* Rutas adaptadas al Hotel manteniendo tu estructura original */}
-            <Nav.Link
-              onClick={() => manejarNavegacion("/clientes")}
-              className={mostrarMenu ? "color-texto-marca" : "text-dark"}
-            >
-              {mostrarMenu ? <i className="bi-people-fill me-2"></i> : null}
-              <strong>Clientes</strong>
-            </Nav.Link>
+            {usuario?.rol !== 'cliente' && (
+              <Nav.Link
+                onClick={() => manejarNavegacion("/clientes")}
+                className={mostrarMenu ? "color-texto-marca" : "text-dark"}
+              >
+                {mostrarMenu ? <i className="bi-people-fill me-2"></i> : null}
+                <strong>Clientes</strong>
+              </Nav.Link>
+            )}
 
-        {tienePermiso("ver_empleados") && (
-  <Nav.Link
-    onClick={() => manejarNavegacion("/empleados")}
-    className={mostrarMenu ? "color-texto-marca" : "text-dark"}
-  >
-    {mostrarMenu ? (
-      <i className="bi-person-badge-fill me-2"></i>
-    ) : null}
+                    {usuario?.rol !== 'cliente' && tienePermiso("ver_empleados") && (
+              <Nav.Link
+                onClick={() => manejarNavegacion("/empleados")}
+                className={mostrarMenu ? "color-texto-marca" : "text-dark"}
+              >
+                {mostrarMenu ? (
+                  <i className="bi-person-badge-fill me-2"></i>
+                ) : null}
 
-    <strong>Empleados</strong>
-  </Nav.Link>
-)}
+                <strong>Empleados</strong>
+              </Nav.Link>
+            )}
 
-{tienePermiso("ver_permisos") && (
-  <Nav.Link
-    onClick={() => manejarNavegacion("/permisos")}
-    className={mostrarMenu ? "color-texto-marca" : "text-dark"}
-  >
-    {mostrarMenu ? (
-      <i className="bi-shield-lock-fill me-2"></i>
-    ) : null}
+            {usuario?.rol !== 'cliente' && tienePermiso("ver_permisos") && (
+              <Nav.Link
+                onClick={() => manejarNavegacion("/permisos")}
+                className={mostrarMenu ? "color-texto-marca" : "text-dark"}
+              >
+                {mostrarMenu ? (
+                  <i className="bi-shield-lock-fill me-2"></i>
+                ) : null}
 
-    <strong>Permisos</strong>
-  </Nav.Link>
-)}
+                <strong>Permisos</strong>
+              </Nav.Link>
+            )}
            
-            <Nav.Link
-              onClick={() => manejarNavegacion("/controlventas")}
-              className={mostrarMenu ? "color-texto-marca" : "text-dark"}
-            >
-              {mostrarMenu ? <i className="bi-cash-stack me-2"></i> : null}
-              <strong>Ventas</strong>
-            </Nav.Link>
+            {usuario?.rol !== 'cliente' && (
+              <Nav.Link
+                onClick={() => manejarNavegacion("/controlventas")}
+                className={mostrarMenu ? "color-texto-marca" : "text-dark"}
+              >
+                {mostrarMenu ? <i className="bi-cash-stack me-2"></i> : null}
+                <strong>Ventas</strong>
+              </Nav.Link>
+            )}
 
             <Nav.Link
               onClick={() => manejarNavegacion("/catalogo")}
@@ -165,7 +181,7 @@ const cerrarSesion = async () => {
             <div className="mt-3 p-3 rounded bg-light text-dark">
               <p className="mb-2">
                 <i className="bi-envelope-fill me-2"></i>
-                {usuario?.email || usuario?.nombre_empleado || "Usuario"}
+                {usuario?.email || usuario?.nombre_empleado || usuario?.nombre || "Usuario"}
               </p>
 
               <button

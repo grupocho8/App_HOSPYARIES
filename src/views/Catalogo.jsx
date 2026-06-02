@@ -4,18 +4,50 @@ import { supabase } from "../database/supabaseconfig";
 import TarjetaCatalogo from "../components/catalogo/TarjetaCatalogo";
 import CuadroBusquedas from "../components/busquedas/CuadroBusquedas";
 import ModalInfoHabitacion from "../components/catalogo/ModalInfoHabitacion";
+import ModalReservaCliente from "../components/catalogo/ModalReservaCliente";
+import NotificacionOperacion from "../components/NotificacionOperacion";
+import { useAuth } from "../components/context/AuthContext";
+import { useNavigate } from "react-router-dom";
 
 const Catalogo = () => {
+  const { usuario } = useAuth();
+  const navigate = useNavigate();
   const [habitaciones, setHabitaciones] = useState([]);
   const [textoBusqueda, setTextoBusqueda] = useState("");
   const [filtroEstado, setFiltroEstado] = useState("todos");
   const [cargando, setCargando] = useState(true);
   const [habitacionSeleccionada, setHabitacionSeleccionada] = useState(null);
-  const [mostrarModal, setMostrarModal] = useState(false);
+  const [mostrarModalInfo, setMostrarModalInfo] = useState(false);
+  const [mostrarModalReserva, setMostrarModalReserva] = useState(false);
+  const [toast, setToast] = useState({ mostrar: false, mensaje: "", tipo: "" });
 
-  const abrirModal = (hab) => {
+  const abrirModalInfo = (hab) => {
     setHabitacionSeleccionada(hab);
-    setMostrarModal(true);
+    setMostrarModalInfo(true);
+  };
+
+  const manejarIntentoReserva = (hab) => {
+    setMostrarModalInfo(false);
+    if (!usuario) {
+      setToast({
+        mostrar: true,
+        mensaje: "Debes iniciar sesión o registrarte para realizar una reserva.",
+        tipo: "advertencia"
+      });
+      setTimeout(() => navigate("/login"), 3000);
+    } else {
+      setHabitacionSeleccionada(hab);
+      setMostrarModalReserva(true);
+    }
+  };
+
+  const manejarReservaExitosa = () => {
+    setToast({
+      mostrar: true,
+      mensaje: "¡Reserva completada exitosamente!",
+      tipo: "exito"
+    });
+    cargarDatos(); // Recargar para actualizar el estado de la habitación
   };
 
   const cargarDatos = async () => {
@@ -100,16 +132,33 @@ const Catalogo = () => {
         <Row className="g-4">
           {habitacionesFiltradas.map((hab) => (
             <Col xs={12} key={hab.id_habitacion}>
-              <TarjetaCatalogo habitación={hab} onClick={() => abrirModal(hab)} />
+              <TarjetaCatalogo habitación={hab} onClick={() => abrirModalInfo(hab)} />
             </Col>
           ))}
         </Row>
       )}
 
       <ModalInfoHabitacion 
-        mostrar={mostrarModal} 
-        manejarCerrar={() => setMostrarModal(false)} 
+        mostrar={mostrarModalInfo} 
+        manejarCerrar={() => setMostrarModalInfo(false)} 
         habitacion={habitacionSeleccionada} 
+        manejarReserva={manejarIntentoReserva}
+        usuario={usuario}
+      />
+
+      <ModalReservaCliente
+        mostrarModal={mostrarModalReserva}
+        setMostrarModal={setMostrarModalReserva}
+        habitacion={habitacionSeleccionada}
+        usuario={usuario}
+        onReservaExitosa={manejarReservaExitosa}
+      />
+
+      <NotificacionOperacion
+        mostrar={toast.mostrar}
+        mensaje={toast.mensaje}
+        tipo={toast.tipo}
+        onCerrar={() => setToast({ ...toast, mostrar: false })}
       />
     </Container>
   );

@@ -1,7 +1,7 @@
 import React from "react";
 import { Modal, Button, Badge, Row, Col } from "react-bootstrap";
 
-const ModalInfoHabitacion = ({ mostrar, manejarCerrar, habitacion }) => {
+const ModalInfoHabitacion = ({ mostrar, manejarCerrar, habitacion, manejarReserva, usuario }) => {
   if (!habitacion) return null;
 
   const colorEstado = {
@@ -84,14 +84,32 @@ const ModalInfoHabitacion = ({ mostrar, manejarCerrar, habitacion }) => {
               </Row>
             </div>
             
-            <div className="mt-auto pt-4 text-end">
-               <Button 
-                 variant="light" 
-                 onClick={manejarCerrar} 
-                 className="px-4 fw-bold text-muted border"
-               >
-                 Cerrar
-               </Button>
+            <div className="mt-auto pt-4 d-flex flex-column align-items-end gap-2">
+               {!usuario && habitacion.estado?.toLowerCase() === "disponible" && (
+                 <small className="text-danger fw-bold mb-1">
+                   <i className="bi-info-circle me-1"></i>
+                   Para poder reservar esta habitación necesitas iniciar sesión o registrarte.
+                 </small>
+               )}
+               <div className="d-flex gap-2 w-100 justify-content-end">
+                 <Button 
+                   variant="light" 
+                   onClick={manejarCerrar} 
+                   className="px-4 fw-bold text-muted border"
+                 >
+                   Cerrar
+                 </Button>
+                 {habitacion.estado?.toLowerCase() === "disponible" && (
+                   <Button 
+                     variant="primary" 
+                     onClick={() => manejarReserva(habitacion)} 
+                     className="px-4 fw-bold"
+                     style={{ backgroundColor: "#0F5C4F", borderColor: "#0F5C4F" }}
+                   >
+                     Reservar
+                   </Button>
+                 )}
+               </div>
             </div>
           </Col>
         </Row>

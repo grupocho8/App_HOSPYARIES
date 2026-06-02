@@ -1,6 +1,8 @@
 import React from "react";
 import { Container, Row, Col, Button, Card, Carousel } from "react-bootstrap";
 import { useNavigate } from "react-router-dom"; 
+import { useAuth } from "../components/context/AuthContext";
+import { useEffect } from "react";
 import "bootstrap-icons/font/bootstrap-icons.css";
 
 // Assets
@@ -11,6 +13,13 @@ import Matrimonial from "../assets/Matrimonial cama.png";
 
 const Inicio = () => {
   const navigate = useNavigate();
+  const { usuario } = useAuth();
+
+  useEffect(() => {
+    if (usuario?.rol === "cliente") {
+      navigate("/reservaciones", { replace: true });
+    }
+  }, [usuario, navigate]);
 
   // Funciones de navegación independientes
   const irAReservaciones = () => navigate("/reservaciones");

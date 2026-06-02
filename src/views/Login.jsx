@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import FormularioLogin from "../components/login/FormularioLogin";
+import FormularioRegistroCliente from "../components/login/FormularioRegistroCliente";
 import { useAuth } from "../components/context/AuthContext";
 import { supabase } from "../database/supabaseconfig";
 import '../App.css';
@@ -9,6 +10,7 @@ const Login = () => {
   const [usuario, setUsuario] = useState("");
   const [contrasena, setContrasena] = useState("");
   const [error, setError] = useState(null);
+  const [vista, setVista] = useState("login"); // 'login' | 'registro'
   const navegar = useNavigate();
   const { login } = useAuth();
 
@@ -37,7 +39,7 @@ useEffect(() => {
   // 2. NUEVO useEffect: Detector de tecla Enter
   useEffect(() => {
     const detectarEnter = (evento) => {
-      if (evento.key === "Enter") {
+      if (evento.key === "Enter" && vista === "login") {
         iniciarSesion(); // Llama a tu función de login
       }
     };
@@ -70,14 +72,22 @@ useEffect(() => {
 
   return (
     <div style={estiloContenedor}>
-      <FormularioLogin
-        usuario={usuario}
-        contrasena={contrasena}
-        error={error}
-        setUsuario={setUsuario}
-        setContrasena={setContrasena}
-        iniciarSesion={iniciarSesion}
-      />
+      {vista === "login" ? (
+        <FormularioLogin
+          usuario={usuario}
+          contrasena={contrasena}
+          error={error}
+          setUsuario={setUsuario}
+          setContrasena={setContrasena}
+          iniciarSesion={iniciarSesion}
+          cambiarVista={() => setVista("registro")}
+          continuarComoInvitado={() => navegar("/catalogo")}
+        />
+      ) : (
+        <FormularioRegistroCliente 
+          cambiarVista={() => setVista("login")}
+        />
+      )}
     </div>
   );
 };

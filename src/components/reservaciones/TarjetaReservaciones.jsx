@@ -2,7 +2,7 @@ import React from "react";
 import { Row, Col, Card, Badge, Button, OverlayTrigger, Tooltip } from "react-bootstrap";
 import "bootstrap-icons/font/bootstrap-icons.css";
 
-const TarjetaReservaciones = ({ reservaciones, abrirModalEdicion, abrirModalEliminacion, generarPDFReservacion }) => {
+const TarjetaReservaciones = ({ reservaciones, abrirModalEdicion, abrirModalEliminacion, generarPDFReservacion, esCliente }) => {
   // Función para definir el color del Badge según el estado exacto de tu DB
   const obtenerColorEstado = (estado) => {
     switch (estado?.toLowerCase()) {
@@ -108,31 +108,49 @@ const TarjetaReservaciones = ({ reservaciones, abrirModalEdicion, abrirModalElim
                   </OverlayTrigger>
 
                   {/* BOTÓN EDITAR */}
-                  <OverlayTrigger placement="top" overlay={<Tooltip>Editar reservación</Tooltip>}>
-                    <Button 
-                      variant="light" 
-                      size="sm" 
-                      className="rounded-circle text-warning p-2 d-flex align-items-center justify-content-center" 
-                      style={{ width: '35px', height: '35px' }}
-                      onClick={() => abrirModalEdicion(res)}
-                    >
-                      <i className="bi bi-pencil-fill"></i>
-                    </Button>
-                  </OverlayTrigger>
+                  {!esCliente && (
+                    <OverlayTrigger placement="top" overlay={<Tooltip>Editar reservación</Tooltip>}>
+                      <Button 
+                        variant="light" 
+                        size="sm" 
+                        className="rounded-circle text-warning p-2 d-flex align-items-center justify-content-center" 
+                        style={{ width: '35px', height: '35px' }}
+                        onClick={() => abrirModalEdicion(res)}
+                      >
+                        <i className="bi bi-pencil-fill"></i>
+                      </Button>
+                    </OverlayTrigger>
+                  )}
 
                   {/* BOTÓN ELIMINAR/CANCELAR */}
-                  <OverlayTrigger placement="top" overlay={<Tooltip>Eliminar o Cancelar</Tooltip>
-}>
-                    <Button 
-                      variant="light" 
-                      size="sm" 
-                      className="rounded-circle text-danger p-2 d-flex align-items-center justify-content-center" 
-                      style={{ width: '35px', height: '35px' }}
-                      onClick={() => abrirModalEliminacion(res)}
-                    >
-                      <i className="bi bi-trash3-fill"></i>
-                    </Button>
-                  </OverlayTrigger>
+                  {!esCliente && (
+                    <OverlayTrigger placement="top" overlay={<Tooltip>Eliminar o Cancelar</Tooltip>}>
+                      <Button 
+                        variant="light" 
+                        size="sm" 
+                        className="rounded-circle text-danger p-2 d-flex align-items-center justify-content-center" 
+                        style={{ width: '35px', height: '35px' }}
+                        onClick={() => abrirModalEliminacion(res)}
+                      >
+                        <i className="bi bi-trash3-fill"></i>
+                      </Button>
+                    </OverlayTrigger>
+                  )}
+
+                  {/* BOTÓN CANCELAR PARA CLIENTES */}
+                  {esCliente && (res.estado === 'activa' || res.estado === 'pendiente') && (
+                    <OverlayTrigger placement="top" overlay={<Tooltip>Cancelar Reservación</Tooltip>}>
+                      <Button 
+                        variant="light" 
+                        size="sm" 
+                        className="rounded-circle text-danger p-2 d-flex align-items-center justify-content-center" 
+                        style={{ width: '35px', height: '35px' }}
+                        onClick={() => abrirModalEliminacion(res)}
+                      >
+                        <i className="bi bi-x-circle-fill"></i>
+                      </Button>
+                    </OverlayTrigger>
+                  )}
                 </div>
               </div>
 

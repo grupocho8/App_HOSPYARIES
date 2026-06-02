@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { Form, Button, InputGroup, Alert } from "react-bootstrap";
 
-const FormularioLogin = ({ usuario, contrasena, error, setUsuario, setContrasena, iniciarSesion }) => {
+const FormularioLogin = ({ usuario, contrasena, error, setUsuario, setContrasena, iniciarSesion, cambiarVista, continuarComoInvitado }) => {
   const [verPassword, setVerPassword] = useState(false);
 
   const inputStyle = {
@@ -87,10 +87,18 @@ const FormularioLogin = ({ usuario, contrasena, error, setUsuario, setContrasena
             fontSize: "18px",
             letterSpacing: "1px"
           }} 
-          className="w-100 shadow-lg"
+          className="w-100 shadow-lg mb-3"
         >
           Iniciar
         </Button>
+
+        <p style={{color: "white", cursor: "pointer", textDecoration: "underline", marginTop: "15px"}} onClick={cambiarVista}>
+          ¿No tienes cuenta? Regístrate aquí
+        </p>
+
+        <p style={{color: "rgba(255,255,255,0.8)", cursor: "pointer", fontSize: "14px", marginTop: "10px", fontWeight: "bold"}} onClick={continuarComoInvitado}>
+          <i className="bi-box-arrow-in-right me-1"></i> Continuar como invitado (Ver Catálogo)
+        </p>
       </Form>
 
       <style>{`
