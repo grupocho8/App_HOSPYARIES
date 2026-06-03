@@ -208,7 +208,8 @@ const cargarReservaciones = async () => {
           ),
           habitaciones!id_habitacion (
             numero,
-            tipo
+            tipo,
+            estado
           )
         `)
         .order("fecha_creacion", { ascending: false });
@@ -303,6 +304,7 @@ const cargarReservaciones = async () => {
       });
 
       cargarReservaciones();
+      cargarDatosReferenciales(); // Refrescar lista de habitaciones disponibles
     } catch (err) {
       console.error(err);
       setToast({ mostrar: true, mensaje: "Error en la operación", tipo: "error" });
@@ -338,6 +340,7 @@ const cargarReservaciones = async () => {
       setToast({ mostrar: true, mensaje: "Registro y estado de habitación actualizados", tipo: "exito" });
       setMostrarModalEdicion(false);
       cargarReservaciones();
+      cargarDatosReferenciales(); // Refrescar lista de habitaciones disponibles
     } catch (err) {
       setToast({ mostrar: true, mensaje: "Error al actualizar", tipo: "error" });
     }
@@ -362,6 +365,7 @@ const cargarReservaciones = async () => {
       setToast({ mostrar: true, mensaje: "Reserva eliminada y habitación liberada", tipo: "exito" });
       setMostrarModalEliminacion(false);
       cargarReservaciones();
+      cargarDatosReferenciales(); // Refrescar lista de habitaciones disponibles
     } catch (err) {
       setToast({ mostrar: true, mensaje: "Error al eliminar", tipo: "error" });
     }
@@ -386,6 +390,7 @@ const cargarReservaciones = async () => {
       setToast({ mostrar: true, mensaje: "Reservación cancelada exitosamente", tipo: "exito" });
       setMostrarModalEliminacion(false);
       cargarReservaciones();
+      cargarDatosReferenciales(); // Refrescar lista de habitaciones disponibles
     } catch (err) {
       setToast({ mostrar: true, mensaje: "Error al cancelar la reservación", tipo: "error" });
     }
@@ -399,6 +404,28 @@ const cargarReservaciones = async () => {
   const abrirModalEliminacion = (res) => {
     setReservacionAEliminar(res);
     setMostrarModalEliminacion(true);
+  };
+
+  const confirmarLlegada = async (res) => {
+    try {
+      console.log("Intentando confirmar llegada para reserva:", res);
+      const { error } = await supabase
+        .from("habitaciones")
+        .update({ estado: "ocupada" })
+        .eq("id_habitacion", res.id_habitacion);
+
+      if (error) {
+        console.error("Error de Supabase al actualizar habitación:", error);
+        throw error;
+      }
+
+      console.log("Habitación actualizada a ocupada exitosamente.");
+      setToast({ mostrar: true, mensaje: "Llegada confirmada. Habitación ocupada.", tipo: "exito" });
+      cargarReservaciones();
+    } catch (err) {
+      console.error("Catch block error:", err);
+      setToast({ mostrar: true, mensaje: "Error al confirmar llegada", tipo: "error" });
+    }
   };
 
 return (
@@ -457,6 +484,7 @@ return (
             abrirModalEdicion={abrirModalEdicion}
             abrirModalEliminacion={abrirModalEliminacion}
             generarPDFReservacion={generarPDFReservacion}
+            confirmarLlegada={confirmarLlegada}
             esCliente={usuario?.rol === "cliente"}
           />
         </Col>
@@ -468,6 +496,7 @@ return (
             abrirModalEdicion={abrirModalEdicion}
             abrirModalEliminacion={abrirModalEliminacion}
             generarPDFReservacion={generarPDFReservacion}
+            confirmarLlegada={confirmarLlegada}
             paginaActual={paginaActual}
             registrosPorPagina={registrosPorPagina}
             esCliente={usuario?.rol === "cliente"}

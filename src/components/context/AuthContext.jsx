@@ -19,6 +19,10 @@ export const AuthProvider = ({ children }) => {
   useEffect(() => {
 
     const cargarSesion = async () => {
+      // Sincronizar estados automáticamente
+      import("../../utils/sincronizarEstados").then(module => {
+        module.sincronizarReservaciones();
+      });
 
       try {
 

@@ -2,9 +2,10 @@ import React from "react";
 import { Row, Col, Card, Badge, Button, OverlayTrigger, Tooltip } from "react-bootstrap";
 import "bootstrap-icons/font/bootstrap-icons.css";
 
-const TarjetaReservaciones = ({ reservaciones, abrirModalEdicion, abrirModalEliminacion, generarPDFReservacion, esCliente }) => {
+const TarjetaReservaciones = ({ reservaciones, abrirModalEdicion, abrirModalEliminacion, generarPDFReservacion, confirmarLlegada, esCliente }) => {
   // Función para definir el color del Badge según el estado exacto de tu DB
-  const obtenerColorEstado = (estado) => {
+  const obtenerColorEstado = (estado, estadoHabitacion) => {
+    if (estado?.toLowerCase() === 'activa' && estadoHabitacion?.toLowerCase() === 'ocupada') return 'primary';
     switch (estado?.toLowerCase()) {
       case 'activa': return 'success';
       case 'finalizada': return 'secondary';
@@ -34,11 +35,11 @@ const TarjetaReservaciones = ({ reservaciones, abrirModalEdicion, abrirModalElim
                 </div>
                 <Badge 
                   pill // Bordes redondeados
-                  bg={obtenerColorEstado(res.estado)} 
+                  bg={obtenerColorEstado(res.estado, res.habitaciones?.estado)} 
                   className="px-3 py-2 text-uppercase fw-bold" 
                   style={{ fontSize: '0.65rem', letterSpacing: '0.5px' }}
                 >
-                  {res.estado}
+                  {res.estado === 'activa' && res.habitaciones?.estado === 'ocupada' ? 'hospedado' : res.estado}
                 </Badge>
               </div>
 
@@ -106,6 +107,21 @@ const TarjetaReservaciones = ({ reservaciones, abrirModalEdicion, abrirModalElim
                       <i className="bi bi-file-earmark-pdf-fill"></i>
                     </Button>
                   </OverlayTrigger>
+
+                  {/* BOTÓN CONFIRMAR LLEGADA */}
+                  {!esCliente && res.estado === 'activa' && res.habitaciones?.estado === 'reservada' && res.fecha_inicio <= new Date().toISOString().split('T')[0] && (
+                    <OverlayTrigger placement="top" overlay={<Tooltip>Confirmar Llegada (Check-in)</Tooltip>}>
+                      <Button 
+                        variant="light" 
+                        size="sm" 
+                        className="rounded-circle text-success p-2 d-flex align-items-center justify-content-center" 
+                        style={{ width: '35px', height: '35px' }}
+                        onClick={() => confirmarLlegada(res)}
+                      >
+                        <i className="bi bi-box-arrow-in-right"></i>
+                      </Button>
+                    </OverlayTrigger>
+                  )}
 
                   {/* BOTÓN EDITAR */}
                   {!esCliente && (

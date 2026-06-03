@@ -67,13 +67,20 @@ const cerrarSesion = async () => {
   } else {
     if (esCatalogo) {
       contenidoMenu = (
-        <Nav className="ms-auto pe-2">
+        <Nav className="ms-auto pe-2 d-flex align-items-center">
           <Nav.Link
             onClick={() => manejarNavegacion("/catalogo")}
-            className={mostrarMenu ? "color-texto-marca" : "text-white"}
+            className={mostrarMenu ? "color-texto-marca" : "text-dark"}
           >
             <i className="bi-images me-2"></i>
             <strong>Catálogo</strong>
+          </Nav.Link>
+          <Nav.Link
+            onClick={() => manejarNavegacion("/login")}
+            className={mostrarMenu ? "color-texto-marca" : "text-dark"}
+          >
+            <i className="bi-box-arrow-in-right me-2"></i>
+            <strong>Iniciar sesión</strong>
           </Nav.Link>
         </Nav>
       );

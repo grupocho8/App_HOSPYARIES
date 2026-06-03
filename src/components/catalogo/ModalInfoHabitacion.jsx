@@ -99,7 +99,7 @@ const ModalInfoHabitacion = ({ mostrar, manejarCerrar, habitacion, manejarReserv
                  >
                    Cerrar
                  </Button>
-                 {habitacion.estado?.toLowerCase() === "disponible" && (
+                 {habitacion.estado?.toLowerCase() === "disponible" && (!usuario || usuario?.rol === 'cliente') && (
                    <Button 
                      variant="primary" 
                      onClick={() => manejarReserva(habitacion)} 
