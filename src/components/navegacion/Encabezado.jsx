@@ -1,14 +1,17 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
-import { Container, Nav, Navbar, Offcanvas, NavDropdown } from "react-bootstrap";
+import { Container, Nav, Navbar, Offcanvas, NavDropdown, Badge } from "react-bootstrap";
 import logo from "../../assets/logo_hospyaries.png"; 
 import { supabase } from "../../database/supabaseconfig";
 import { useAuth } from "../context/AuthContext";
+import { sincronizarReservaciones } from "../../utils/sincronizarEstados";
 import InstallPWAButton from "../InstallPWAButton";
 
 const Encabezado = () => {
 
   const [mostrarMenu, setMostrarMenu] = useState(false);
+  const [mostrarNotificaciones, setMostrarNotificaciones] = useState(false);
+  const [notificaciones, setNotificaciones] = useState([]);
   const navigate = useNavigate();
   const location = useLocation(); //Para detectar la ruta actual
 const {
@@ -18,6 +21,76 @@ const {
 } = useAuth();
 
 const { permisos } = useAuth();
+
+  useEffect(() => {
+    if (!usuario) return;
+
+    const cargarNotificaciones = async () => {
+      // 1. Sincronizar estados (cancela/finaliza automáticamente las vencidas)
+      await sincronizarReservaciones();
+
+      // 2. Obtener fecha local actual en formato YYYY-MM-DD
+      const hoy = new Date();
+      const offset = hoy.getTimezoneOffset();
+      const hoyLocal = new Date(hoy.getTime() - (offset * 60 * 1000));
+      const hoyStr = hoyLocal.toISOString().split('T')[0];
+
+      let query = supabase
+        .from('reservaciones')
+        .select(`
+          id_reservacion,
+          fecha_inicio,
+          fecha_fin,
+          habitaciones!id_habitacion (numero, tipo, estado),
+          clientes (nombre, apellido)
+        `)
+        .eq('estado', 'activa')
+        .gte('fecha_fin', hoyStr)
+        .order('fecha_inicio', { ascending: true });
+
+      if (usuario.rol === 'cliente') {
+        query = query.eq('id_cliente', usuario.id_cliente);
+      }
+
+      const { data, error } = await query;
+      if (!error && data) {
+        // Omitir reservaciones que ya tienen la habitación ocupada (el cliente ya llegó)
+        const pendientes = data.filter(notif => notif.habitaciones?.estado !== 'ocupada');
+        setNotificaciones(pendientes);
+      }
+    };
+
+    cargarNotificaciones();
+
+    // Suscripción a cambios en reservaciones
+    const channelRes = supabase
+      .channel('custom-all-channel-notif-res')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'reservaciones' },
+        (payload) => {
+          cargarNotificaciones();
+        }
+      )
+      .subscribe();
+
+    // Suscripción a cambios en habitaciones (cuando pasan a ocupadas)
+    const channelHab = supabase
+      .channel('custom-all-channel-notif-hab')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'habitaciones' },
+        (payload) => {
+          cargarNotificaciones();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channelRes);
+      supabase.removeChannel(channelHab);
+    };
+  }, [usuario]);
 
   const manejarToggle = () => setMostrarMenu(!mostrarMenu);
 
@@ -168,37 +241,29 @@ const cerrarSesion = async () => {
             {/*Icono cerrar sesión en barra superior */}
             {mostrarMenu ? null : (
               <>
+                {/* Botón de perfil (SOLO WEB/DESKTOP) */}
+                {usuario && !esLogin && !esCatalogo && (
+                  <Nav.Link
+                    onClick={() => manejarNavegacion("/perfil")}
+                    className="text-dark d-flex align-items-center me-2 d-none d-md-flex"
+                    title="Mi Perfil"
+                  >
+                    <i className="bi bi-person-circle fs-5"></i>
+                  </Nav.Link>
+                )}
+
                 <div className="d-flex align-items-center me-2">
                   <InstallPWAButton />
                 </div>
-                <Nav.Link
-                  onClick={cerrarSesion}
-                  className="text-dark d-flex align-items-center"
-                >
-                  <i className="bi-box-arrow-right fs-5"></i>
-                </Nav.Link>
               </>
             )}
 
             <hr />
           </Nav>
 
-          {/*Información del usuario y boton cerrar sesión */}
+          {/* Botón de instalación PWA en menú móvil */}
           {mostrarMenu && (
-            <div className="mt-3 p-3 rounded bg-light text-dark">
-              <p className="mb-2">
-                <i className="bi-envelope-fill me-2"></i>
-                {usuario?.email || usuario?.nombre_empleado || usuario?.nombre || "Usuario"}
-              </p>
-
-              <button
-                className="btn btn-outline-danger mt-3 w-100"
-                onClick={cerrarSesion}
-              >
-                <i className="bi-box-arrow-right me-2"></i>
-                Cerrar sesión
-              </button>
-
+            <div className="mt-auto pt-3">
               <InstallPWAButton isMobile={true} />
             </div>
           )}
@@ -228,15 +293,103 @@ const cerrarSesion = async () => {
           </strong>
         </Navbar.Brand>
 
-        {/* Botón del menú */}
-        {!esLogin && (
-          <Navbar.Toggle
-            aria-controls="menu-offcanvas"
-            onClick={manejarToggle}
-          />
-        )}
+        {/* Botones derechos */}
+        <div className="d-flex align-items-center">
+          
+          {/* Botón de perfil (SOLO MÓVIL) */}
+          {usuario && !esLogin && !esCatalogo && (
+            <div 
+              className="position-relative me-3 d-md-none" 
+              style={{ cursor: "pointer" }} 
+              onClick={() => manejarNavegacion("/perfil")}
+              title="Mi Perfil"
+            >
+              <i className="bi bi-person-circle fs-3 text-dark"></i>
+            </div>
+          )}
 
-        {/*Menú lateral */}
+          {/* Botón de notificaciones */}
+          {usuario && usuario.rol !== 'cliente' && !esLogin && !esCatalogo && (
+            <div 
+              className="position-relative me-3" 
+              style={{ cursor: "pointer" }} 
+              onClick={() => setMostrarNotificaciones(true)}
+            >
+              <i className="bi bi-bell-fill fs-4 text-dark"></i>
+              {notificaciones.length > 0 && (
+                <Badge
+                  pill
+                  bg="danger"
+                  className="position-absolute top-0 start-100 translate-middle"
+                  style={{ fontSize: "0.6rem" }}
+                >
+                  {notificaciones.length}
+                </Badge>
+              )}
+            </div>
+          )}
+
+          {/* Botón del menú */}
+          {!esLogin && (
+            <Navbar.Toggle
+              aria-controls="menu-offcanvas"
+              onClick={manejarToggle}
+            />
+          )}
+        </div>
+
+        {/* Panel de Notificaciones */}
+        <Offcanvas
+          placement="end"
+          show={mostrarNotificaciones}
+          onHide={() => setMostrarNotificaciones(false)}
+        >
+          <Offcanvas.Header closeButton>
+            <Offcanvas.Title>
+              <i className="bi bi-bell-fill me-2" style={{ color: "#0F5C4F" }}></i>
+              Notificaciones
+            </Offcanvas.Title>
+          </Offcanvas.Header>
+          <Offcanvas.Body>
+            {notificaciones.length === 0 ? (
+              <p className="text-muted text-center mt-4">
+                <i className="bi bi-bell-slash text-secondary fs-1 d-block mb-2"></i>
+                No hay reservaciones activas.
+              </p>
+            ) : (
+              <div className="d-flex flex-column gap-3">
+                {notificaciones.map(notif => (
+                  <div 
+                    key={notif.id_reservacion} 
+                    className="p-3 bg-light rounded shadow-sm border-start border-4" 
+                    style={{ cursor: "pointer", transition: "transform 0.2s", borderLeftColor: "#0F5C4F" }}
+                    onMouseEnter={(e) => e.currentTarget.style.transform = 'translateY(-3px)'}
+                    onMouseLeave={(e) => e.currentTarget.style.transform = 'translateY(0)'}
+                    onClick={() => { setMostrarNotificaciones(false); manejarNavegacion("/reservaciones"); }}
+                  >
+                    <div className="d-flex justify-content-between align-items-start mb-1">
+                      <h6 className="fw-bold mb-0 text-dark">
+                        Hab. {notif.habitaciones?.numero} <span className="text-muted fw-normal">({notif.habitaciones?.tipo})</span>
+                      </h6>
+                      <Badge pill className="px-2" style={{ fontSize: '0.65rem', backgroundColor: "#0F5C4F" }}>Activa</Badge>
+                    </div>
+                    <p className="mb-1 small text-muted">
+                      <strong>Cliente:</strong> {notif.clientes?.nombre} {notif.clientes?.apellido}
+                    </p>
+                    <p className="mb-0 small text-muted d-flex align-items-center">
+                      <i className="bi bi-calendar-event me-1"></i>
+                      {new Date(notif.fecha_inicio).toLocaleDateString('es-ES', { day: '2-digit', month: 'short' })} 
+                      <i className="bi bi-arrow-right mx-1"></i> 
+                      {new Date(notif.fecha_fin).toLocaleDateString('es-ES', { day: '2-digit', month: 'short', year: 'numeric' })}
+                    </p>
+                  </div>
+                ))}
+              </div>
+            )}
+          </Offcanvas.Body>
+        </Offcanvas>
+
+        {/*Menú lateral principal */}
         <Navbar.Offcanvas
           id="menu-offcanvas"
           placement="end"

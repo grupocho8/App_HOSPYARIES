@@ -90,7 +90,7 @@ const TablaReservaciones = ({
                   {!esCliente && (
                     <>
                       {/* Botón de Confirmar Llegada */}
-                      {res.estado === 'activa' && res.habitaciones?.estado === 'reservada' && res.fecha_inicio <= new Date().toISOString().split('T')[0] && (
+                      {res.estado === 'activa' && res.habitaciones?.estado !== 'ocupada' && new Date(res.fecha_inicio).setHours(0,0,0,0) <= new Date().setHours(0,0,0,0) && (
                         <Button
                           variant="outline-success"
                           size="sm"

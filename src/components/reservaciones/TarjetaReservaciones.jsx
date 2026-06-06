@@ -109,7 +109,7 @@ const TarjetaReservaciones = ({ reservaciones, abrirModalEdicion, abrirModalElim
                   </OverlayTrigger>
 
                   {/* BOTÓN CONFIRMAR LLEGADA */}
-                  {!esCliente && res.estado === 'activa' && res.habitaciones?.estado === 'reservada' && res.fecha_inicio <= new Date().toISOString().split('T')[0] && (
+                  {!esCliente && res.estado === 'activa' && res.habitaciones?.estado !== 'ocupada' && new Date(res.fecha_inicio).setHours(0,0,0,0) <= new Date().setHours(0,0,0,0) && (
                     <OverlayTrigger placement="top" overlay={<Tooltip>Confirmar Llegada (Check-in)</Tooltip>}>
                       <Button 
                         variant="light" 

@@ -2,10 +2,11 @@ import { supabase } from '../database/supabaseconfig';
 
 export const sincronizarReservaciones = async () => {
   try {
-    // Obtener la fecha de hoy en formato YYYY-MM-DD
+    // Obtener la fecha de hoy en formato YYYY-MM-DD usando la zona horaria local
     const hoy = new Date();
-    hoy.setHours(0, 0, 0, 0); // Inicio del día para comparación justa
-    const hoyStr = hoy.toISOString().split('T')[0];
+    const offset = hoy.getTimezoneOffset();
+    const hoyLocal = new Date(hoy.getTime() - (offset * 60 * 1000));
+    const hoyStr = hoyLocal.toISOString().split('T')[0];
 
     // Buscar reservaciones activas cuya fecha_fin ya pasó
     const { data: reservasVencidas, error: errorBusqueda } = await supabase
@@ -44,16 +45,26 @@ export const sincronizarReservaciones = async () => {
       }
 
       // 2. Liberar la habitación (estado disponible)
-      const { error: errorHabitacion } = await supabase
+      // OJO: Solo la liberamos si sigue asignada a ESTA reserva vencida.
+      // Si otra reservación ya la tomó, su id_reservacion_actual será diferente.
+      const { data: habitacionActual } = await supabase
         .from('habitaciones')
-        .update({ 
-          estado: 'disponible',
-          id_reservacion_actual: null 
-        })
-        .eq('id_habitacion', reserva.id_habitacion);
+        .select('id_reservacion_actual')
+        .eq('id_habitacion', reserva.id_habitacion)
+        .single();
 
-      if (errorHabitacion) {
-        console.error(`Error liberando habitación ${reserva.id_habitacion}:`, errorHabitacion);
+      if (habitacionActual && habitacionActual.id_reservacion_actual === reserva.id_reservacion) {
+        const { error: errorHabitacion } = await supabase
+          .from('habitaciones')
+          .update({ 
+            estado: 'disponible',
+            id_reservacion_actual: null 
+          })
+          .eq('id_habitacion', reserva.id_habitacion);
+
+        if (errorHabitacion) {
+          console.error(`Error liberando habitación ${reserva.id_habitacion}:`, errorHabitacion);
+        }
       }
     }
 

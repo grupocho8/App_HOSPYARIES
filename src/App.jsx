@@ -16,6 +16,7 @@ import Login from "./views/Login";
 import Pagina404 from "./views/Pagina404";
 import Empleados from "./views/Empleados";
 import Permisos from './views/Permisos';
+import Perfil from './views/Perfil';
 
 const App = () => {
   return (
@@ -27,6 +28,7 @@ const App = () => {
           {/* Rutas Públicas */}
           <Route path='/login' element={<Login />} />
           <Route path='/catalogo' element={<Catalogo />} />
+          <Route path='/perfil' element={<RutaProtegida><Perfil /></RutaProtegida>} />
 
           <Route path='/' element={<RutaProtegida><Inicio /></RutaProtegida>} />
           

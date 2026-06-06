@@ -1,8 +1,30 @@
 import React, { useState } from "react";
-import { Form, Button, InputGroup, Alert } from "react-bootstrap";
+import { Form, Button, InputGroup, Alert, Modal } from "react-bootstrap";
+import { supabase } from "../../database/supabaseconfig";
 
 const FormularioLogin = ({ usuario, contrasena, error, setUsuario, setContrasena, iniciarSesion, cambiarVista, continuarComoInvitado }) => {
   const [verPassword, setVerPassword] = useState(false);
+  const [mostrarModalRecuperar, setMostrarModalRecuperar] = useState(false);
+  const [correoRecuperacion, setCorreoRecuperacion] = useState("");
+  const [mensajeRecuperacion, setMensajeRecuperacion] = useState({ tipo: "", texto: "" });
+  const [enviandoRecuperacion, setEnviandoRecuperacion] = useState(false);
+
+  const manejarRecuperacion = async () => {
+    if (!correoRecuperacion) {
+      setMensajeRecuperacion({ tipo: "danger", texto: "Por favor ingresa un correo electrónico." });
+      return;
+    }
+    setEnviandoRecuperacion(true);
+    try {
+      const { error } = await supabase.auth.resetPasswordForEmail(correoRecuperacion);
+      if (error) throw error;
+      setMensajeRecuperacion({ tipo: "success", texto: "Se ha enviado un enlace de recuperación a tu correo." });
+    } catch (err) {
+      setMensajeRecuperacion({ tipo: "danger", texto: "Error al enviar el enlace. Verifica que el correo sea correcto." });
+    } finally {
+      setEnviandoRecuperacion(false);
+    }
+  };
 
   const inputStyle = {
     backgroundColor: "rgba(255, 255, 255, 0.2)",
@@ -92,6 +114,10 @@ const FormularioLogin = ({ usuario, contrasena, error, setUsuario, setContrasena
           Iniciar
         </Button>
 
+        <p style={{color: "rgba(255,255,255,0.8)", cursor: "pointer", textDecoration: "underline", marginTop: "10px", fontSize: "14px"}} onClick={() => setMostrarModalRecuperar(true)}>
+          ¿Olvidaste tu contraseña?
+        </p>
+
         <p style={{color: "white", cursor: "pointer", textDecoration: "underline", marginTop: "15px"}} onClick={cambiarVista}>
           ¿No tienes cuenta? Regístrate aquí
         </p>
@@ -109,6 +135,43 @@ const FormularioLogin = ({ usuario, contrasena, error, setUsuario, setContrasena
           color: white !important; 
         }
       `}</style>
+
+      {/* Modal de Recuperación de Contraseña */}
+      <Modal show={mostrarModalRecuperar} onHide={() => setMostrarModalRecuperar(false)} centered>
+        <Modal.Header closeButton>
+          <Modal.Title style={{ color: "#0F5C4F", fontWeight: "bold" }}>Recuperar Contraseña</Modal.Title>
+        </Modal.Header>
+        <Modal.Body>
+          <p className="text-muted mb-3">
+            Ingresa el correo electrónico asociado a tu cuenta y te enviaremos un enlace seguro para restablecer tu contraseña.
+          </p>
+          {mensajeRecuperacion.texto && (
+            <Alert variant={mensajeRecuperacion.tipo}>{mensajeRecuperacion.texto}</Alert>
+          )}
+          <Form.Group>
+            <Form.Control
+              type="email"
+              placeholder="tu@correo.com"
+              value={correoRecuperacion}
+              onChange={(e) => setCorreoRecuperacion(e.target.value)}
+              autoFocus
+            />
+          </Form.Group>
+        </Modal.Body>
+        <Modal.Footer>
+          <Button variant="secondary" onClick={() => setMostrarModalRecuperar(false)}>
+            Cerrar
+          </Button>
+          <Button 
+            style={{ backgroundColor: "#0F5C4F", borderColor: "#0F5C4F" }} 
+            onClick={manejarRecuperacion}
+            disabled={enviandoRecuperacion}
+          >
+            {enviandoRecuperacion ? "Enviando..." : "Enviar enlace"}
+          </Button>
+        </Modal.Footer>
+      </Modal>
+
     </div>
   );
 };
