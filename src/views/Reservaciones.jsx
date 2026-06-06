@@ -515,29 +515,29 @@ return (
          </Col>
 
                <Col xs={3} sm={5} md={5} lg={5} className="text-end d-flex justify-content-end gap-2">
+                 {usuario?.tipo_empleado === "recepcionista" && (
+                   <Button
+                     onClick={abrirModalCorreo}
+                     size="md"
+                     className="color-navbar border-0"
+                   >
+                     <i className="bi bi-envelope"></i>
+                     <span className="d-none d-lg-inline ms-2">
+                       Enviar
+                     </span>
+                   </Button>
+                 )}
                  {usuario?.rol !== "cliente" && (
-                   <>
-                     <Button
-                       onClick={abrirModalCorreo}
-                       size="md"
-                       className="color-navbar border-0"
-                     >
-                       <i className="bi bi-envelope"></i>
-                       <span className="d-none d-lg-inline ms-2">
-                         Enviar
-                       </span>
-                     </Button>
-                     <Button
-                       onClick={() => setMostrarModal(true)}
-                       size="md"
-                       className="color-navbar border-0"
-                     >
-                       <i className="bi-plus-lg"></i>
-                       <span className="d-none d-sm-inline ms-2">
-                         Nueva Reservación
-                       </span>
-                     </Button>
-                   </>
+                   <Button
+                     onClick={() => setMostrarModal(true)}
+                     size="md"
+                     className="color-navbar border-0"
+                   >
+                     <i className="bi-plus-lg"></i>
+                     <span className="d-none d-sm-inline ms-2">
+                       Nueva Reservación
+                     </span>
+                   </Button>
                  )}
                </Col>
       </Row>
