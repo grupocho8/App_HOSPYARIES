@@ -436,7 +436,7 @@ const cargarReservaciones = async () => {
 
   // Inicializar EmailJS
   useEffect(() => {
-    emailjs.init(import.meta.env.VITE_EMAILJS_PUBLIC_KEY);
+    emailjs.init({ publicKey: import.meta.env.VITE_EMAILJS_PUBLIC_KEY });
   }, []);
 
   const abrirModalCorreo = () => {
@@ -480,7 +480,8 @@ const cargarReservaciones = async () => {
     emailjs.send(
       import.meta.env.VITE_EMAILJS_SERVICE_ID,
       import.meta.env.VITE_EMAILJS_TEMPLATE_ID,
-      templateParams
+      templateParams,
+      { publicKey: import.meta.env.VITE_EMAILJS_PUBLIC_KEY }
     )
     .then(() => {
       setToast({
