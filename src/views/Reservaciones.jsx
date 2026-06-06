@@ -14,6 +14,8 @@ import TarjetaReservaciones from "../components/reservaciones/TarjetaReservacion
 import Paginacion from "../components/ordenamiento/Paginacion"; // ✅ NUEVO
 import jsPDF from "jspdf";
 import { useAuth } from "../components/context/AuthContext";
+import ModalEnvioCorreoReservaciones from "../components/reservaciones/ModalEnvioCorreoReservaciones";
+import emailjs from '@emailjs/browser';
 
 const Reservaciones = () => {
   const { usuario } = useAuth();
@@ -30,6 +32,10 @@ const Reservaciones = () => {
   const [mostrarModalEdicion, setMostrarModalEdicion] = useState(false);
   const [mostrarModalEliminacion, setMostrarModalEliminacion] = useState(false);
   const [toast, setToast] = useState({ mostrar: false, mensaje: "", tipo: "" });
+
+  const [mostrarModalCorreo, setMostrarModalCorreo] = useState(false);
+  const [emailDestino, setEmailDestino] = useState("");
+  const [enviandoCorreo, setEnviandoCorreo] = useState(false);
 
   const [nuevaReservacion, setNuevaReservacion] = useState({
     id_cliente: "",
@@ -428,6 +434,76 @@ const cargarReservaciones = async () => {
     }
   };
 
+  // Inicializar EmailJS
+  useEffect(() => {
+    emailjs.init(import.meta.env.VITE_EMAILJS_PUBLIC_KEY);
+  }, []);
+
+  const abrirModalCorreo = () => {
+    setEmailDestino("");
+    setMostrarModalCorreo(true);
+  };
+
+  const formatearReservacionesParaCorreo = () => {
+    if (reservacionesFiltradas.length === 0) return "No hay reservaciones registradas.";
+    let texto = `LISTADO DE RESERVACIONES\n\n`;
+    texto += `Fecha: ${new Date().toLocaleDateString("es-NI")}\n`;
+    texto += `Total de reservaciones: ${reservacionesFiltradas.length}\n\n`;
+    
+    reservacionesFiltradas.forEach((res, index) => {
+      texto += `${index + 1}. Cliente: ${res.clientes?.nombre} ${res.clientes?.apellido} (Cédula: ${res.clientes?.cedula || 'N/A'})\n`;
+      texto += `   Habitación: ${res.habitaciones?.numero} - Tipo: ${res.habitaciones?.tipo}\n`;
+      texto += `   Estancia: ${new Date(res.fecha_inicio).toLocaleDateString("es-NI")} al ${new Date(res.fecha_fin).toLocaleDateString("es-NI")}\n`;
+      texto += `   Estado: ${res.estado.toUpperCase()}\n\n`;
+    });
+    return texto;
+  };
+
+  const enviarCorreoReservaciones = () => {
+    if (!emailDestino.trim()) {
+      setToast({
+        mostrar: true,
+        mensaje: "Por favor ingresa un correo destino.",
+        tipo: "advertencia",
+      });
+      return;
+    }
+    setEnviandoCorreo(true);
+    const mensaje = formatearReservacionesParaCorreo();
+    const templateParams = {
+      to_name: "Administrador",
+      user_email: emailDestino,
+      message: mensaje,
+      fecha_envio: new Date().toLocaleDateString("es-NI")
+    };
+    
+    emailjs.send(
+      import.meta.env.VITE_EMAILJS_SERVICE_ID,
+      import.meta.env.VITE_EMAILJS_TEMPLATE_ID,
+      templateParams
+    )
+    .then(() => {
+      setToast({
+        mostrar: true,
+        mensaje: "Correo enviado correctamente.",
+        tipo: "exito",
+      });
+      setMostrarModalCorreo(false);
+      setEmailDestino("");
+    })
+    .catch((error) => {
+      console.error("Error EmailJS:", error);
+      setToast({
+        mostrar: true,
+        mensaje: "Error al enviar el correo.",
+        tipo: "error",
+      });
+    })
+    .finally(() => {
+      setEnviandoCorreo(false);
+    });
+  };
+
 return (
   <Container className="mt-4">
     {/* Contenedor del título con el borde inferior idéntico al de Clientes */}
@@ -437,23 +513,30 @@ return (
            <h3><i className="bi-calendar-check-fill me-2"></i> Reservaciones</h3>
          </Col>
 
-               <Col xs={3} sm={5} md={5} lg={5} className="text-end">
+               <Col xs={3} sm={5} md={5} lg={5} className="text-end d-flex justify-content-end gap-2">
                  {usuario?.rol !== "cliente" && (
-                   <Button
-                     onClick={() =>
-                       setMostrarModal(
-                         true
-                       )
-                     }
-                     size="md"
-                     className="color-navbar border-0"
-                   >
-                     <i className="bi-plus-lg"></i>
-         
-                     <span className="d-none d-sm-inline ms-2">
-                       Nueva Reservación
-                     </span>
-                   </Button>
+                   <>
+                     <Button
+                       onClick={abrirModalCorreo}
+                       size="md"
+                       className="color-navbar border-0"
+                     >
+                       <i className="bi bi-envelope"></i>
+                       <span className="d-none d-lg-inline ms-2">
+                         Enviar
+                       </span>
+                     </Button>
+                     <Button
+                       onClick={() => setMostrarModal(true)}
+                       size="md"
+                       className="color-navbar border-0"
+                     >
+                       <i className="bi-plus-lg"></i>
+                       <span className="d-none d-sm-inline ms-2">
+                         Nueva Reservación
+                       </span>
+                     </Button>
+                   </>
                  )}
                </Col>
       </Row>
@@ -542,6 +625,16 @@ return (
       eliminarReservacion={eliminarReservacion}
       cancelarReservacionCliente={cancelarReservacionCliente}
       esCliente={usuario?.rol === "cliente"}
+    />
+
+    <ModalEnvioCorreoReservaciones
+      mostrarModalCorreo={mostrarModalCorreo}
+      setMostrarModalCorreo={setMostrarModalCorreo}
+      emailDestino={emailDestino}
+      setEmailDestino={setEmailDestino}
+      enviandoCorreo={enviandoCorreo}
+      enviarCorreoReservaciones={enviarCorreoReservaciones}
+      totalReservaciones={reservacionesFiltradas.length}
     />
 
     <NotificacionOperacion

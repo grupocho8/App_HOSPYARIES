@@ -236,21 +236,22 @@ const cerrarSesion = async () => {
               <strong>Catálogo</strong>
             </Nav.Link>
 
+            {usuario && (
+              <Nav.Link
+                onClick={() => manejarNavegacion("/perfil")}
+                className={mostrarMenu ? "color-texto-marca" : "text-dark"}
+              >
+                {mostrarMenu ? <i className="bi-person-circle me-2"></i> : null}
+                <strong>Mi Perfil</strong>
+              </Nav.Link>
+            )}
+
             <hr />
 
             {/*Icono cerrar sesión en barra superior */}
             {mostrarMenu ? null : (
               <>
-                {/* Botón de perfil (SOLO WEB/DESKTOP) */}
-                {usuario && !esLogin && !esCatalogo && (
-                  <Nav.Link
-                    onClick={() => manejarNavegacion("/perfil")}
-                    className="text-dark d-flex align-items-center me-2 d-none d-md-flex"
-                    title="Mi Perfil"
-                  >
-                    <i className="bi bi-person-circle fs-5"></i>
-                  </Nav.Link>
-                )}
+
 
                 <div className="d-flex align-items-center me-2">
                   <InstallPWAButton />
@@ -296,17 +297,7 @@ const cerrarSesion = async () => {
         {/* Botones derechos */}
         <div className="d-flex align-items-center">
           
-          {/* Botón de perfil (SOLO MÓVIL) */}
-          {usuario && !esLogin && !esCatalogo && (
-            <div 
-              className="position-relative me-3 d-md-none" 
-              style={{ cursor: "pointer" }} 
-              onClick={() => manejarNavegacion("/perfil")}
-              title="Mi Perfil"
-            >
-              <i className="bi bi-person-circle fs-3 text-dark"></i>
-            </div>
-          )}
+
 
           {/* Botón de notificaciones */}
           {usuario && usuario.rol !== 'cliente' && !esLogin && !esCatalogo && (
