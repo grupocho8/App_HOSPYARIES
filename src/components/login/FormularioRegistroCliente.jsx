@@ -120,7 +120,7 @@ const FormularioRegistroCliente = ({ cambiarVista }) => {
   return (
     <div style={{ width: "100%", maxWidth: "450px", textAlign: "center" }}>
       <h2 style={{ color: "white", fontWeight: "800", marginBottom: "30px", letterSpacing: "1px" }}>
-        Registrarse como Cliente
+        Regístrese
       </h2>
 
       {error && <Alert variant="danger" style={{borderRadius: "10px"}}>{error}</Alert>}
