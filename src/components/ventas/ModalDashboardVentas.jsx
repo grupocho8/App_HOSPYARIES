@@ -3,12 +3,15 @@ import { Modal, Form, Row, Col, Card, Button } from "react-bootstrap";
 import {
   BarChart,
   Bar,
+  Cell,
   XAxis,
   YAxis,
   CartesianGrid,
   Tooltip,
   Legend,
   ResponsiveContainer,
+  LabelList,
+  ReferenceLine,
   ScatterChart,
   Scatter,
   ZAxis,
@@ -20,9 +23,9 @@ import * as XLSX from "xlsx";
 const ModalDashboardVentas = ({ mostrar, manejarCerrar, ventas }) => {
   const hoy = new Date().toLocaleDateString("en-CA", { timeZone: "America/Managua" });
   
-  // Estado para la navegación interna entre tableros (0: Turnos, 1: Fidelidad, 2: Tendencias Financieras)
+  // Estado para la navegacion interna entre tableros
   const [vistaActual, setVistaActual] = useState(0);
-  const totalVistas = 3;
+  const totalVistas = 4;
 
   // Opción rápida de filtro
   const [rango, setRango] = useState("mes");
@@ -30,6 +33,25 @@ const ModalDashboardVentas = ({ mostrar, manejarCerrar, ventas }) => {
     new Date(new Date().getFullYear(), new Date().getMonth(), 1).toLocaleDateString("en-CA")
   );
   const [fechaHasta, setFechaHasta] = useState(hoy);
+
+  const formatearMoneda = (valor) =>
+    `C$${Number(valor || 0).toLocaleString("en-US", {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    })}`;
+
+  const formatearPorcentaje = (valor) => `${Number(valor || 0).toFixed(2)}%`;
+
+  const obtenerColorEstado = (estado) => {
+    const colores = {
+      Disponible: "#4f7faa",
+      Ocupada: "#ff8f24",
+      Reservada: "#e85757",
+      Cancelada: "#8a8f98",
+    };
+
+    return colores[estado] || "#4f7faa";
+  };
 
   const manejarCambioRango = (e) => {
     const val = e.target.value;
@@ -62,11 +84,24 @@ const ModalDashboardVentas = ({ mostrar, manejarCerrar, ventas }) => {
     if (!ventas || ventas.length === 0) {
       return {
         datosFiltrados: [],
-        estadisticas: {},
+        estadisticas: {
+          totalIngresos: 0,
+          totalReservas: 0,
+        },
         chartTurnos: [],
         chartFidelidad: [],
         chartTendenciaDiaria: [],
-        chartDiasSemana: []
+        chartDiasSemana: [],
+        chartDistribucionOcupacion: [],
+        tasaOcupacionGlobal: [],
+        alertaPro: {
+          comprometidoPct: 0,
+          alertaNivel: "Controlado",
+        },
+        cancelaciones: {
+          total: 0,
+          porcentaje: 0,
+        }
       };
     }
 
@@ -95,17 +130,23 @@ const ModalDashboardVentas = ({ mostrar, manejarCerrar, ventas }) => {
       "Lunes": 0, "Martes": 0, "Miércoles": 0, "Jueves": 0, "Viernes": 0, "Sábado": 0, "Domingo": 0
     };
 
+    // --- PROCESAMIENTO MÓDULO 4: DASHBOARD OPERATIVO TIPO TABLEAU ---
+    const mapaOcupacion = {};
+    const conteoPorTurno = { dia: 0, noche: 0 };
+    const estadosGlobales = { disponible: 0, ocupada: 0, reservada: 0, cancelada: 0 };
+    let cancelacionesPeriodo = 0;
+
     filtrados.forEach((v) => {
       const monto = parseFloat(v.monto) || 0;
       totalIngresos += monto;
 
       // Turnos
       const turno = v.empleados?.tipo_turno?.toLowerCase() === "dia" ? "dia" : "noche";
-      const estado = v.reservaciones?.estado?.toLowerCase() || "desconocido";
+      const estadoReserva = v.reservaciones?.estado?.toLowerCase() || "desconocido";
       ingresosTurno[turno] += monto;
       
-      if (["activa", "cancelada", "finalizada"].includes(estado)) {
-        turnosData[turno][estado] += monto;
+      if (["activa", "cancelada", "finalizada"].includes(estadoReserva)) {
+        turnosData[turno][estadoReserva] += monto;
       } else {
         turnosData[turno]["finalizada"] += monto;
       }
@@ -131,6 +172,42 @@ const ModalDashboardVentas = ({ mostrar, manejarCerrar, ventas }) => {
       if (diasSemanaMap[diaNombre] !== undefined) {
         diasSemanaMap[diaNombre] += monto;
       }
+
+      const tipoHabitacion = v.reservaciones?.habitaciones?.tipo || "Sin tipo";
+      const estadoOperativo =
+        estadoReserva === "cancelada"
+          ? "Cancelada"
+          : estadoReserva === "activa"
+            ? "Reservada"
+            : estadoReserva === "finalizada"
+              ? "Ocupada"
+              : "Disponible";
+      const claveOcupacion = `${estadoOperativo}-${tipoHabitacion}`;
+
+      if (!mapaOcupacion[claveOcupacion]) {
+        mapaOcupacion[claveOcupacion] = {
+          estado: estadoOperativo,
+          tipo: tipoHabitacion,
+          nombre: `${estadoOperativo} | ${tipoHabitacion}`,
+          diaConteo: 0,
+          nocheConteo: 0,
+        };
+      }
+
+      mapaOcupacion[claveOcupacion][turno === "dia" ? "diaConteo" : "nocheConteo"] += 1;
+      conteoPorTurno[turno] += 1;
+
+      const estadoGlobal =
+        estadoReserva === "cancelada"
+          ? "cancelada"
+          : estadoReserva === "activa"
+            ? "reservada"
+            : estadoReserva === "finalizada"
+              ? "ocupada"
+              : "disponible";
+
+      estadosGlobales[estadoGlobal] += 1;
+      if (estadoGlobal === "cancelada") cancelacionesPeriodo += 1;
     });
 
     // Mapeo Módulo Turnos
@@ -173,6 +250,22 @@ const ModalDashboardVentas = ({ mostrar, manejarCerrar, ventas }) => {
     const cantidadDias = chartTendenciaDiaria.length;
     const promedioIngresoDiario = cantidadDias > 0 ? totalIngresos / cantidadDias : 0;
 
+    const chartDistribucionOcupacion = Object.values(mapaOcupacion)
+      .map((item) => ({
+        ...item,
+        diaPct: conteoPorTurno.dia > 0 ? (item.diaConteo / conteoPorTurno.dia) * 100 : 0,
+        nochePct: conteoPorTurno.noche > 0 ? (item.nocheConteo / conteoPorTurno.noche) * 100 : 0,
+      }))
+      .sort((a, b) => a.estado.localeCompare(b.estado) || a.tipo.localeCompare(b.tipo));
+
+    const totalEstados = Object.values(estadosGlobales).reduce((acc, curr) => acc + curr, 0);
+    const porcentajeEstado = (estado) => totalEstados > 0 ? (estadosGlobales[estado] / totalEstados) * 100 : 0;
+    const disponiblePct = porcentajeEstado("disponible");
+    const ocupadaPct = porcentajeEstado("ocupada");
+    const reservadaPct = porcentajeEstado("reservada");
+    const comprometidoPct = Math.min(100, ocupadaPct + reservadaPct);
+    const alertaNivel = comprometidoPct >= 80 ? "Alto" : comprometidoPct >= 60 ? "Medio" : "Controlado";
+
     return {
       datosFiltrados: filtrados,
       estadisticas: {
@@ -185,16 +278,44 @@ const ModalDashboardVentas = ({ mostrar, manejarCerrar, ventas }) => {
         promedioMontoPorCliente,
         promedioVisitasPorCliente,
         clientesEnRiesgo,
-        promedioIngresoDiario
+        promedioIngresoDiario,
+        totalReservas
       },
       chartTurnos: [turnosData.dia, turnosData.noche],
       chartFidelidad,
       chartTendenciaDiaria,
-      chartDiasSemana
+      chartDiasSemana,
+      chartDistribucionOcupacion,
+      tasaOcupacionGlobal: [
+        { estado: "Disponible", porcentaje: disponiblePct, color: "#b7dfd2" },
+        { estado: "Ocupada", porcentaje: ocupadaPct, color: "#2f5f8f" },
+        { estado: "Reservada", porcentaje: reservadaPct, color: "#8bc5b8" },
+      ],
+      alertaPro: {
+        comprometidoPct,
+        alertaNivel,
+        promedio60: 60,
+        promedio80: 80,
+      },
+      cancelaciones: {
+        total: cancelacionesPeriodo,
+        porcentaje: totalReservas > 0 ? (cancelacionesPeriodo / totalReservas) * 100 : 0,
+      }
     };
   }, [ventas, fechaDesde, fechaHasta]);
 
-  const { datosFiltrados, estadisticas, chartTurnos, chartFidelidad, chartTendenciaDiaria, chartDiasSemana } = datosProcesados;
+  const {
+    datosFiltrados,
+    estadisticas,
+    chartTurnos,
+    chartFidelidad,
+    chartTendenciaDiaria,
+    chartDiasSemana,
+    chartDistribucionOcupacion,
+    tasaOcupacionGlobal,
+    alertaPro,
+    cancelaciones
+  } = datosProcesados;
 
   const descargarExcel = () => {
     const dataExcel = datosFiltrados.map((v) => ({
@@ -219,11 +340,12 @@ const ModalDashboardVentas = ({ mostrar, manejarCerrar, ventas }) => {
   const titulosDashboard = [
     "Comparativa de Ingresos por Turno",
     "Análisis de Ganancias y Fidelización de Clientes",
-    "Tendencias y Desviaciones de Ingresos Diarios"
+    "Tendencias y Desviaciones de Ingresos Diarios",
+    "Dashboard Operativo de Ocupación"
   ];
 
   return (
-    <Modal show={mostrar} onHide={manejarCerrar} size="xl" centered>
+    <Modal show={mostrar} onHide={manejarCerrar} size="xl" centered dialogClassName="modal-dashboard-ventas">
       <Modal.Header closeButton className="border-0 pb-0">
         <div className="w-100 d-flex justify-content-between align-items-center px-4 pt-2">
           {/* Flecha de Navegación Izquierda */}
@@ -494,6 +616,192 @@ const ModalDashboardVentas = ({ mostrar, manejarCerrar, ventas }) => {
               </Col>
             </Row>
           </>
+        )}
+
+        {/* PANTALLA 4: DASHBOARD OPERATIVO TIPO TABLEAU */}
+        {vistaActual === 3 && (
+          <div className="dashboard-tableau">
+            <div className="dashboard-tableau-barra">
+              <div>
+                <span className="dashboard-tableau-eyebrow">HospyAries Analytics</span>
+                <h2 className="dashboard-tableau-titulo">Dashboard Operativo</h2>
+              </div>
+              <div className="dashboard-tableau-rango">
+                {fechaDesde} <i className="bi bi-arrow-right mx-2"></i> {fechaHasta}
+              </div>
+            </div>
+
+            <Row className="g-4 align-items-start">
+              <Col xl={7}>
+                <section className="dashboard-tableau-panel">
+                  <h3 className="dashboard-tableau-subtitulo">
+                    Distribución de Ocupación por Tipo de Habitación y Turno
+                  </h3>
+                  <div className="dashboard-tableau-nota">
+                    <span>estado</span>
+                    <span>Tipo</span>
+                    <span>Día</span>
+                    <span>Noche</span>
+                  </div>
+                  <div style={{ width: "100%", height: 315 }}>
+                  <ResponsiveContainer>
+                    <BarChart
+                      data={chartDistribucionOcupacion}
+                      layout="vertical"
+                      margin={{ top: 8, right: 42, left: 105, bottom: 10 }}
+                      barCategoryGap={7}
+                    >
+                      <CartesianGrid stroke="#eeeeee" horizontal={false} />
+                      <XAxis
+                        type="number"
+                        domain={[0, 100]}
+                        tickFormatter={formatearPorcentaje}
+                        axisLine={false}
+                        tickLine={false}
+                      />
+                      <YAxis
+                        type="category"
+                        dataKey="nombre"
+                        width={140}
+                        axisLine={false}
+                        tickLine={false}
+                        tick={{ fontSize: 12 }}
+                      />
+                      <Tooltip
+                        formatter={(value, name) => [
+                          formatearPorcentaje(value),
+                          name === "diaPct" ? "Día" : "Noche",
+                        ]}
+                        labelFormatter={(label) => label}
+                        contentStyle={{ borderRadius: 8, border: "1px solid #d9e2e8" }}
+                      />
+                      <Legend
+                        verticalAlign="top"
+                        align="center"
+                        iconType="square"
+                        formatter={(value) => value === "diaPct" ? "Día" : "Noche"}
+                      />
+                      <Bar dataKey="diaPct" name="diaPct" radius={[0, 3, 3, 0]}>
+                        {chartDistribucionOcupacion.map((item) => (
+                          <Cell key={`dia-${item.nombre}`} fill={obtenerColorEstado(item.estado)} />
+                        ))}
+                        <LabelList dataKey="diaPct" position="right" formatter={formatearPorcentaje} />
+                      </Bar>
+                      <Bar dataKey="nochePct" name="nochePct" radius={[0, 3, 3, 0]}>
+                        {chartDistribucionOcupacion.map((item) => (
+                          <Cell key={`noche-${item.nombre}`} fill={obtenerColorEstado(item.estado)} opacity={0.78} />
+                        ))}
+                        <LabelList dataKey="nochePct" position="right" formatter={formatearPorcentaje} />
+                      </Bar>
+                    </BarChart>
+                  </ResponsiveContainer>
+                  </div>
+                </section>
+              </Col>
+
+              <Col xl={5}>
+                <section className="dashboard-tableau-panel h-100">
+                  <h3 className="dashboard-tableau-subtitulo">Ingresos del Período</h3>
+                  <div className="dashboard-tableau-kpi">
+                    <span>Ingresos Totales</span>
+                    <strong>{formatearMoneda(estadisticas.totalIngresos)}</strong>
+                  </div>
+
+                  <h3 className="dashboard-tableau-subtitulo mt-5">Tasa de Ocupación Global</h3>
+                  <div className="dashboard-tableau-segmentos">
+                    <div className="dashboard-tableau-segmentos-labels">
+                      {tasaOcupacionGlobal.map((item) => (
+                        <span key={item.estado}>{item.estado}</span>
+                      ))}
+                    </div>
+                    <div className="dashboard-tableau-segmentos-barra">
+                      {tasaOcupacionGlobal.map((item) => (
+                        <div
+                          key={item.estado}
+                          className="dashboard-tableau-segmento"
+                          style={{
+                            width: `${Math.max(item.porcentaje, item.porcentaje > 0 ? 12 : 0)}%`,
+                            backgroundColor: item.color,
+                            color: item.estado === "Ocupada" ? "#ffffff" : "#24343c",
+                            minWidth: item.porcentaje > 0 ? 78 : 0,
+                          }}
+                        >
+                          {formatearPorcentaje(item.porcentaje)}
+                        </div>
+                      ))}
+                    </div>
+                    <div className="dashboard-tableau-scroll" />
+                  </div>
+                </section>
+              </Col>
+            </Row>
+
+            <Row className="g-4 mt-4 align-items-center">
+              <Col xl={7}>
+                <section className="dashboard-tableau-panel">
+                  <div className="d-flex justify-content-between align-items-start mb-2">
+                    <h3 className="dashboard-tableau-subtitulo mb-0">Alerta PRO</h3>
+                    <span className={`dashboard-tableau-badge ${alertaPro.alertaNivel === "Alto" ? "is-danger" : alertaPro.alertaNivel === "Medio" ? "is-warning" : "is-ok"}`}>
+                      {alertaPro.alertaNivel}
+                    </span>
+                  </div>
+                  <div style={{ width: "100%", height: 315 }}>
+                    <ResponsiveContainer>
+                      <BarChart
+                        data={[{ nombre: "Inventario Comprometido", valor: alertaPro.comprometidoPct || 0 }]}
+                        layout="vertical"
+                        margin={{ top: 30, right: 35, left: 8, bottom: 42 }}
+                      >
+                        <CartesianGrid stroke="#eeeeee" horizontal={false} />
+                        <XAxis
+                          type="number"
+                          domain={[0, 100]}
+                          tickFormatter={formatearPorcentaje}
+                          label={{ value: "Inventario Comprometido %", position: "insideBottom", offset: -22 }}
+                        />
+                        <YAxis type="category" dataKey="nombre" hide />
+                        <Tooltip formatter={(value) => [formatearPorcentaje(value), "Inventario comprometido"]} />
+                        <ReferenceLine x={60} stroke="#d9d9d9" strokeWidth={24} label={{ value: "60% de Promedio", position: "bottom" }} />
+                        <ReferenceLine x={80} stroke="#ef5350" strokeWidth={2} label={{ value: "80% de Promedio", position: "bottom" }} />
+                        <Bar dataKey="valor" fill="#4f7faa" barSize={105} radius={[0, 3, 3, 0]}>
+                          <LabelList dataKey="valor" position="right" formatter={formatearPorcentaje} />
+                        </Bar>
+                      </BarChart>
+                    </ResponsiveContainer>
+                  </div>
+                </section>
+              </Col>
+
+              <Col xl={5}>
+                <Row className="g-4">
+                  <Col md={6} xl={12}>
+                    <section className="dashboard-tableau-panel dashboard-tableau-cancelaciones">
+                      <h3 className="dashboard-tableau-subtitulo">Cancelaciones del Período</h3>
+                      <div className="dashboard-tableau-tabla">
+                        <div className="dashboard-tableau-tabla-header">Estado</div>
+                        <div className="dashboard-tableau-tabla-fila">
+                          <strong>cancelada</strong>
+                          <span>{cancelaciones.total}</span>
+                        </div>
+                      </div>
+                      <p className="dashboard-tableau-texto">
+                        {formatearPorcentaje(cancelaciones.porcentaje)} de las ventas filtradas
+                      </p>
+                    </section>
+                  </Col>
+                  <Col md={6} xl={12}>
+                    <section className="dashboard-tableau-panel dashboard-tableau-resumen">
+                      <span className="dashboard-tableau-eyebrow">Resumen operativo</span>
+                      <strong>{formatearPorcentaje(alertaPro.comprometidoPct)}</strong>
+                      <p>
+                        Ocupadas y reservadas dentro del período seleccionado.
+                      </p>
+                    </section>
+                  </Col>
+                </Row>
+              </Col>
+            </Row>
+          </div>
         )}
       </Modal.Body>
     </Modal>
